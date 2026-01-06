@@ -13,8 +13,9 @@ project’s build artifacts. It assembles the root filesystem, adds the installe
 and boot components, and produces a reproducible ISO with the correct bootloader
 setup for supported targets.
 
-> This application has **not entered development** yet. Once work begins, this
-> notice will be updated to state that the application is a work in progress.
+> This application is still a **work in progress**. Some features may be
+> incomplete or subject to change while development continues. This note will
+> be removed as soon as the application is ready for everyday use.
 
 ### Philosophy
 
