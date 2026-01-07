@@ -9,6 +9,10 @@
  * @param output_path The path where the ISO file will be created.
  *
  * @return - `0` - Indicates successful ISO creation.
- * @return - `-1` - Indicates ISO creation failure.
+ * @return - `-1` - Indicates staging directory creation failure.
+ * @return - `-2` - Indicates squashfs creation failure.
+ * @return - `-3` - Indicates boot files copy failure.
+ * @return - `-4` - Indicates EFI image setup failure.
+ * @return - `-5` - Indicates ISO assembly failure.
  */
 int create_iso(const char *rootfs_path, const char *output_path);

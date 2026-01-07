@@ -14,28 +14,6 @@
 /** The default initrd image path within the ISO. */
 #define BOOT_INITRD_PATH "/boot/initrd.img"
 
-static int write_file(const char *path, const char *content)
-{
-    // Open the file for writing.
-    FILE *file = fopen(path, "w");
-    if (file == NULL)
-    {
-        LOG_ERROR("Failed to create file %s: %s", path, strerror(errno));
-        return -1;
-    }
-
-    // Write the content to the file.
-    if (fputs(content, file) == EOF)
-    {
-        LOG_ERROR("Failed to write to file %s", path);
-        fclose(file);
-        return -1;
-    }
-
-    fclose(file);
-    return 0;
-}
-
 int setup_grub(const char *rootfs_path)
 {
     char grub_dir[MAX_PATH_LENGTH];
@@ -69,7 +47,7 @@ int setup_grub(const char *rootfs_path)
     // Write the GRUB configuration file.
     if (write_file(grub_cfg_path, grub_cfg) != 0)
     {
-        return -1;
+        return -2;
     }
 
     LOG_INFO("GRUB configured successfully");
@@ -104,7 +82,7 @@ int setup_isolinux(const char *rootfs_path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to copy isolinux.bin");
-        return -1;
+        return -2;
     }
 
     // Copy ldlinux.c32 from the system.
@@ -116,7 +94,7 @@ int setup_isolinux(const char *rootfs_path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to copy ldlinux.c32");
-        return -1;
+        return -3;
     }
 
     // Construct the isolinux.cfg path.
@@ -139,7 +117,7 @@ int setup_isolinux(const char *rootfs_path)
     // Write the isolinux configuration file.
     if (write_file(isolinux_cfg_path, isolinux_cfg) != 0)
     {
-        return -1;
+        return -4;
     }
 
     LOG_INFO("isolinux configured successfully");
@@ -173,7 +151,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     if (mkdir_p(theme_dir) != 0)
     {
         LOG_ERROR("Failed to create Plymouth theme directory: %s", theme_dir);
-        return -1;
+        return -2;
     }
 
     // Construct the destination path for the splash image.
@@ -183,7 +161,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     if (copy_file(logo_path, splash_dest) != 0)
     {
         LOG_ERROR("Failed to copy splash logo");
-        return -1;
+        return -3;
     }
 
     // Construct the theme file path.
@@ -203,7 +181,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     // Write the Plymouth theme file.
     if (write_file(theme_file_path, theme_cfg) != 0)
     {
-        return -1;
+        return -4;
     }
 
     // Construct the script file path.
@@ -222,7 +200,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     // Write the Plymouth script file.
     if (write_file(script_path, script_cfg) != 0)
     {
-        return -1;
+        return -5;
     }
 
     // Set LimeOS as the default Plymouth theme.

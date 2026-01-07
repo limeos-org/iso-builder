@@ -5,7 +5,12 @@
 
 #include "all.h"
 
-/** The size of the EFI boot image in megabytes. */
+/**
+ * The size of the EFI boot image in megabytes.
+ *
+ * 4MB provides sufficient space for the GRUB EFI binary (~1MB) plus
+ * headroom for FAT filesystem overhead and future additions.
+ */
 #define EFI_IMAGE_SIZE_MB 4
 
 /** The path to the MBR template for hybrid ISO. */
@@ -29,6 +34,7 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
 {
     char command[MAX_COMMAND_LENGTH];
 
+    // Use xz compression for best compression ratio on live filesystem.
     LOG_INFO("Creating squashfs filesystem...");
     snprintf(
         command, sizeof(command),
@@ -128,7 +134,7 @@ static int setup_efi_image(const char *staging_path)
         return -1;
     }
 
-    // Format as FAT.
+    // Format as FAT12, appropriate for small (<16MB) EFI system partitions.
     snprintf(command, sizeof(command), "mkfs.fat -F 12 %s", efi_img_path);
     if (run_command(command) != 0)
     {
@@ -189,6 +195,9 @@ static int assemble_iso(const char *staging_path, const char *output_path)
 {
     char command[MAX_COMMAND_LENGTH];
 
+    // Build hybrid ISO supporting both BIOS (isolinux) and UEFI (EFI image) boot.
+    // -boot-load-size 4: Load 4 sectors (2KB) of boot image per El Torito spec.
+    // -isohybrid-gpt-basdat: Mark EFI partition as basic data for GPT systems.
     LOG_INFO("Running xorriso to create hybrid ISO...");
     snprintf(
         command, sizeof(command),
@@ -243,28 +252,28 @@ int create_iso(const char *rootfs_path, const char *output_path)
     if (create_squashfs(rootfs_path, staging_path) != 0)
     {
         cleanup_staging(staging_path);
-        return -1;
+        return -2;
     }
 
     // Copy boot files to staging.
     if (copy_boot_files(rootfs_path, staging_path) != 0)
     {
         cleanup_staging(staging_path);
-        return -1;
+        return -3;
     }
 
     // Set up EFI boot image.
     if (setup_efi_image(staging_path) != 0)
     {
         cleanup_staging(staging_path);
-        return -1;
+        return -4;
     }
 
     // Assemble the final ISO.
     if (assemble_iso(staging_path, output_path) != 0)
     {
         cleanup_staging(staging_path);
-        return -1;
+        return -5;
     }
 
     // Clean up staging directory.

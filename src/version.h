@@ -1,7 +1,6 @@
 #pragma once
 
-/** The maximum length for version strings (e.g., "1.2.345"). */
-#define VERSION_MAX_LENGTH 32
+#include <stddef.h>
 
 /**
  * Resolves the latest release version within a major version for a component.
@@ -25,12 +24,3 @@ int resolve_version(
     char *out_resolved,
     size_t buffer_length
 );
-
-/**
- * Extracts the major version number from a semantic version string.
- *
- * @param version The version string (e.g., "1.2.3" or "v1.2.3").
- *
- * @return The major version number, or -1 if parsing fails.
- */
-int extract_major_version(const char *version);

@@ -12,7 +12,12 @@
 /** The GitHub API base URL for releases. */
 #define VERSION_API_BASE "https://api.github.com/repos"
 
-/** The initial buffer size for API response data. */
+/**
+ * The initial buffer size for API response data.
+ *
+ * 8KB is sufficient for typical GitHub releases API responses containing
+ * 10-20 releases. The buffer grows dynamically if needed.
+ */
 #define VERSION_INITIAL_BUFFER_SIZE 8192
 
 /** A type representing a dynamically growing buffer for HTTP response data. */
@@ -130,73 +135,6 @@ static int fetch_releases_json(
 
     // Transfer ownership of the buffer to the caller.
     *out_json_data = buffer.data;
-
-    return 0;
-}
-
-int extract_major_version(const char *version)
-{
-    const char *start = version;
-
-    // Skip optional 'v' prefix.
-    if (*start == 'v' || *start == 'V')
-    {
-        start++;
-    }
-
-    // Parse the major version number.
-    char *end;
-    long major = strtol(start, &end, 10);
-    if (end == start || major < 0)
-    {
-        return -1;
-    }
-
-    return (int)major;
-}
-
-static int compare_versions(const char *v1, const char *v2)
-{
-    const char *p1 = v1;
-    const char *p2 = v2;
-
-    // Skip optional 'v' prefix on both versions.
-    if (*p1 == 'v' || *p1 == 'V')
-    {
-        p1++;
-    }
-    if (*p2 == 'v' || *p2 == 'V')
-    {
-        p2++;
-    }
-
-    // Compare each numeric component.
-    while (*p1 && *p2)
-    {
-        // Parse the next numeric segment from each version.
-        long n1 = strtol(p1, (char **)&p1, 10);
-        long n2 = strtol(p2, (char **)&p2, 10);
-
-        // Compare the numeric segments.
-        if (n1 > n2)
-        {
-            return 1;
-        }
-        if (n1 < n2)
-        {
-            return -1;
-        }
-
-        // Skip the dot separator if present.
-        if (*p1 == '.')
-        {
-            p1++;
-        }
-        if (*p2 == '.')
-        {
-            p2++;
-        }
-    }
 
     return 0;
 }

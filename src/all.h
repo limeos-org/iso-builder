@@ -12,13 +12,25 @@
 #include <time.h>
 #include <unistd.h>
 
-/** The maximum length for constructed shell command strings. */
+/**
+ * The maximum length for constructed shell command strings.
+ *
+ * 512 bytes accommodates typical commands with two full paths plus flags.
+ */
 #define MAX_COMMAND_LENGTH 512
 
-/** The maximum length for file path strings. */
+/**
+ * The maximum length for file path strings.
+ *
+ * 256 bytes matches the common PATH_MAX on most Unix systems.
+ */
 #define MAX_PATH_LENGTH 256
 
-/** The maximum length for URL strings. */
+/**
+ * The maximum length for URL strings.
+ *
+ * 512 bytes accommodates GitHub API URLs with organization, repo, and endpoint.
+ */
 #define MAX_URL_LENGTH 512
 
 /** The list of required LimeOS component binaries. */
@@ -51,3 +63,4 @@ static const char *OPTIONAL_COMPONENTS[] = {
 #include "utils/fs.h"
 #include "utils/log.h"
 #include "utils/validate.h"
+#include "utils/version.h"

@@ -7,7 +7,6 @@
 static int write_installer_service(const char *rootfs_path)
 {
     char path[MAX_PATH_LENGTH];
-    FILE *file;
 
     // Create the systemd service directory.
     snprintf(path, sizeof(path), "%s/etc/systemd/system", rootfs_path);
@@ -16,15 +15,8 @@ static int write_installer_service(const char *rootfs_path)
         return -1;
     }
 
-    // Create the installer service unit file.
-    snprintf(path, sizeof(path), "%s/etc/systemd/system/limeos-installer.service", rootfs_path);
-    file = fopen(path, "w");
-    if (!file)
-    {
-        LOG_ERROR("Failed to create file %s: %s", path, strerror(errno));
-        return -1;
-    }
-    fprintf(file,
+    // Define the installer service unit content.
+    const char *service_content =
         "[Unit]\n"
         "Description=LimeOS Installation Wizard\n"
         "After=systemd-user-sessions.service\n"
@@ -42,9 +34,14 @@ static int write_installer_service(const char *rootfs_path)
         "RestartSec=1\n"
         "\n"
         "[Install]\n"
-        "WantedBy=multi-user.target\n"
-    );
-    fclose(file);
+        "WantedBy=multi-user.target\n";
+
+    // Write the installer service unit file.
+    snprintf(path, sizeof(path), "%s/etc/systemd/system/limeos-installer.service", rootfs_path);
+    if (write_file(path, service_content) != 0)
+    {
+        return -1;
+    }
 
     return 0;
 }
@@ -124,15 +121,15 @@ int configure_init(const char *rootfs_path)
     }
     if (enable_installer_service(rootfs_path) != 0)
     {
-        return -1;
+        return -2;
     }
     if (set_default_target(rootfs_path) != 0)
     {
-        return -1;
+        return -3;
     }
     if (disable_getty(rootfs_path) != 0)
     {
-        return -1;
+        return -4;
     }
 
     LOG_INFO("Init system configured successfully");

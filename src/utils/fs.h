@@ -30,3 +30,14 @@ int copy_file(const char *src, const char *dst);
  * @return - `0` - Indicates the path does not exist.
  */
 int file_exists(const char *path);
+
+/**
+ * Writes content to a file, creating it if it doesn't exist.
+ *
+ * @param path The file path to write to.
+ * @param content The content to write.
+ *
+ * @return - `0` - Indicates successful write.
+ * @return - `-1` - Indicates write failure.
+ */
+int write_file(const char *path, const char *content);

@@ -43,3 +43,23 @@ int file_exists(const char *path)
     struct stat st;
     return stat(path, &st) == 0;
 }
+
+int write_file(const char *path, const char *content)
+{
+    FILE *file = fopen(path, "w");
+    if (file == NULL)
+    {
+        LOG_ERROR("Failed to create file %s: %s", path, strerror(errno));
+        return -1;
+    }
+
+    if (fputs(content, file) == EOF)
+    {
+        LOG_ERROR("Failed to write to file %s", path);
+        fclose(file);
+        return -1;
+    }
+
+    fclose(file);
+    return 0;
+}

@@ -34,7 +34,7 @@ int create_rootfs(const char *path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to update package lists");
-        return -1;
+        return -2;
     }
 
     // Install all packages needed by the installation environment.
@@ -47,7 +47,7 @@ int create_rootfs(const char *path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to install required packages");
-        return -1;
+        return -3;
     }
 
     // Copy kernel to standard path for boot loaders.
@@ -59,7 +59,7 @@ int create_rootfs(const char *path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to copy kernel");
-        return -1;
+        return -4;
     }
 
     // Copy initrd to standard path for boot loaders.
@@ -71,7 +71,7 @@ int create_rootfs(const char *path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to copy initrd");
-        return -1;
+        return -5;
     }
 
     LOG_INFO("Rootfs created successfully");
@@ -107,7 +107,7 @@ int strip_rootfs(const char *path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Command failed: %s", command);
-        return -1;
+        return -2;
     }
 
     // Remove apt cache.
@@ -115,7 +115,7 @@ int strip_rootfs(const char *path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Command failed: %s", command);
-        return -1;
+        return -3;
     }
 
     // Remove apt lists.
@@ -123,7 +123,7 @@ int strip_rootfs(const char *path)
     if (run_command(command) != 0)
     {
         LOG_ERROR("Command failed: %s", command);
-        return -1;
+        return -4;
     }
 
     LOG_INFO("Rootfs stripped successfully");

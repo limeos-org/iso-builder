@@ -9,6 +9,9 @@
  * @param rootfs_path The path to the rootfs directory.
  *
  * @return - `0` - Indicates successful configuration.
- * @return - `-1` - Indicates configuration failure.
+ * @return - `-1` - Indicates service file write failure.
+ * @return - `-2` - Indicates service enable failure.
+ * @return - `-3` - Indicates default target set failure.
+ * @return - `-4` - Indicates getty disable failure.
  */
 int configure_init(const char *rootfs_path);
