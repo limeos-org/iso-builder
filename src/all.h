@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <glob.h>
 #include <json-c/json.h>
+#include <openssl/evp.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>

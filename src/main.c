@@ -19,6 +19,10 @@ static void print_usage(const char *program_name)
 int main(int argc, char *argv[])
 {
     const char *version = NULL;
+    char build_dir[COMMAND_PATH_MAX_LENGTH];
+    char components_dir[COMMAND_PATH_MAX_LENGTH];
+    char rootfs_dir[COMMAND_PATH_MAX_LENGTH];
+    int exit_code = 0;
 
     // Verify the program is running as root.
     if (geteuid() != 0)
@@ -64,14 +68,22 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Clean up old build files.
-    LOG_INFO("Cleaning old build files...");
-    rm_rf(CONFIG_BUILD_DIRECTORY);
+    // Create a secure temporary build directory.
+    if (create_secure_tmpdir(build_dir, sizeof(build_dir)) != 0)
+    {
+        LOG_ERROR("Failed to create secure build directory");
+        return 1;
+    }
+
+    // Construct derived paths.
+    snprintf(components_dir, sizeof(components_dir), "%s/components", build_dir);
+    snprintf(rootfs_dir, sizeof(rootfs_dir), "%s/rootfs", build_dir);
 
     // Initialize the fetch module.
     if (init_fetch() != 0)
     {
         LOG_ERROR("Failed to initialize fetch module");
+        rm_rf(build_dir);
         return 1;
     }
 
@@ -79,10 +91,11 @@ int main(int argc, char *argv[])
     LOG_INFO("Building ISO for version %s", version);
 
     // Fetch all required components.
-    if (fetch_all_components(version, CONFIG_COMPONENTS_DIRECTORY) != 0)
+    if (fetch_all_components(version, components_dir) != 0)
     {
         LOG_ERROR("Failed to fetch components");
         cleanup_fetch();
+        rm_rf(build_dir);
         return 1;
     }
 
@@ -92,54 +105,61 @@ int main(int argc, char *argv[])
     cleanup_fetch();
 
     // Create the root filesystem.
-    if (create_rootfs(CONFIG_ROOTFS_DIRECTORY) != 0)
+    if (create_rootfs(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to create rootfs");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     // Strip unnecessary files from the rootfs.
-    if (strip_rootfs(CONFIG_ROOTFS_DIRECTORY) != 0)
+    if (strip_rootfs(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to strip rootfs");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     // Install component binaries into the rootfs.
-    if (install_components(CONFIG_ROOTFS_DIRECTORY, CONFIG_COMPONENTS_DIRECTORY) != 0)
+    if (install_components(rootfs_dir, components_dir) != 0)
     {
         LOG_ERROR("Failed to install components");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     // Configure the init system.
-    if (configure_init(CONFIG_ROOTFS_DIRECTORY) != 0)
+    if (configure_init(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to configure init");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     LOG_INFO("Phase 2 complete: Rootfs created");
 
     // Configure GRUB for UEFI boot.
-    if (setup_grub(CONFIG_ROOTFS_DIRECTORY) != 0)
+    if (setup_grub(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to configure GRUB");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     // Configure isolinux for BIOS boot.
-    if (setup_isolinux(CONFIG_ROOTFS_DIRECTORY) != 0)
+    if (setup_isolinux(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to configure isolinux");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     // Configure Plymouth splash screen.
-    if (setup_splash(CONFIG_ROOTFS_DIRECTORY, CONFIG_SPLASH_LOGO_PATH) != 0)
+    if (setup_splash(rootfs_dir, CONFIG_SPLASH_LOGO_PATH) != 0)
     {
         LOG_ERROR("Failed to configure splash screen");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     LOG_INFO("Phase 3 complete: Boot configured");
@@ -149,14 +169,18 @@ int main(int argc, char *argv[])
     snprintf(iso_output_path, sizeof(iso_output_path), "limeos-%s.iso", version);
 
     // Create the final ISO image.
-    if (create_iso(CONFIG_ROOTFS_DIRECTORY, iso_output_path) != 0)
+    if (create_iso(rootfs_dir, iso_output_path) != 0)
     {
         LOG_ERROR("Failed to create ISO image");
-        return 1;
+        exit_code = 1;
+        goto cleanup;
     }
 
     LOG_INFO("Phase 4 complete: ISO assembled");
     LOG_INFO("Build complete! ISO available at: %s", iso_output_path);
 
-    return 0;
+cleanup:
+    // Clean up the secure build directory.
+    rm_rf(build_dir);
+    return exit_code;
 }

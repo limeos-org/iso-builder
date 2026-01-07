@@ -1,6 +1,6 @@
 CC = clang
 CFLAGS = -Wall -Wextra -g
-LIBS = -lcurl -ljson-c
+LIBS = -lcurl -ljson-c -lcrypto
 
 # Build Configuration
 

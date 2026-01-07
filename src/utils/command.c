@@ -80,6 +80,7 @@ int run_command(const char *command)
 int run_chroot(const char *rootfs_path, const char *command)
 {
     char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_cmd[COMMAND_QUOTED_MAX_LENGTH];
     char full_command[COMMAND_MAX_LENGTH];
 
     // Quote the rootfs path to prevent command injection.
@@ -88,8 +89,18 @@ int run_chroot(const char *rootfs_path, const char *command)
         return -2;
     }
 
-    // Execute the command inside the chroot environment.
-    snprintf(full_command, sizeof(full_command), "chroot %s %s", quoted_path, command);
+    // Quote the command to prevent injection.
+    if (shell_quote(command, quoted_cmd, sizeof(quoted_cmd)) != 0)
+    {
+        return -2;
+    }
+
+    // Execute the command inside the chroot environment via sh -c.
+    snprintf(
+        full_command, sizeof(full_command),
+        "chroot %s /bin/sh -c %s",
+        quoted_path, quoted_cmd
+    );
     if (run_command(full_command) != 0)
     {
         return -1;
@@ -198,23 +209,60 @@ int rm_file(const char *path)
 
 int chmod_file(const char *mode, const char *path)
 {
-    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
-    char command[COMMAND_MAX_LENGTH];
+    struct stat st;
 
-    // Quote the path to prevent command injection.
-    if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
+    // Validate inputs.
+    if (!mode || !path)
     {
         return -2;
     }
 
-    // Execute the chmod command.
-    snprintf(command, sizeof(command), "chmod %s %s", mode, quoted_path);
-    if (run_command(command) != 0)
+    // Handle "+x" mode: add executable permission.
+    if (strcmp(mode, "+x") == 0)
     {
-        return -1;
+        // Get current file permissions.
+        if (stat(path, &st) != 0)
+        {
+            LOG_ERROR("Failed to stat file for chmod: %s", path);
+            return -1;
+        }
+
+        // Add executable bit for user, group, and others.
+        mode_t new_mode = st.st_mode | S_IXUSR | S_IXGRP | S_IXOTH;
+        if (chmod(path, new_mode) != 0)
+        {
+            LOG_ERROR("Failed to chmod file: %s", path);
+            return -1;
+        }
+
+        return 0;
     }
 
-    return 0;
+    // Handle numeric modes (e.g., "755", "644").
+    if (mode[0] >= '0' && mode[0] <= '7')
+    {
+        char *endptr;
+        long numeric_mode = strtol(mode, &endptr, 8);
+
+        // Validate the mode string was fully parsed and in valid range.
+        if (*endptr != '\0' || numeric_mode < 0 || numeric_mode > 07777)
+        {
+            LOG_ERROR("Invalid chmod mode: %s", mode);
+            return -2;
+        }
+
+        if (chmod(path, (mode_t)numeric_mode) != 0)
+        {
+            LOG_ERROR("Failed to chmod file: %s", path);
+            return -1;
+        }
+
+        return 0;
+    }
+
+    // Reject unknown mode formats to prevent injection.
+    LOG_ERROR("Unsupported chmod mode format: %s", mode);
+    return -2;
 }
 
 int symlink_file(const char *target, const char *link_path)
@@ -290,5 +338,33 @@ int find_first_glob(const char *pattern, char *out_path, size_t buffer_length)
 
     // Free glob resources.
     globfree(&glob_result);
+    return 0;
+}
+
+int create_secure_tmpdir(char *out_path, size_t buffer_length)
+{
+    // Template for mkdtemp - X's will be replaced with unique characters.
+    char template[] = "/tmp/limeos-build-XXXXXX";
+
+    // Validate buffer size.
+    if (buffer_length < sizeof(template))
+    {
+        LOG_ERROR("Buffer too small for temporary directory path");
+        return -1;
+    }
+
+    // Create the secure temporary directory.
+    char *result = mkdtemp(template);
+    if (result == NULL)
+    {
+        LOG_ERROR("Failed to create secure temporary directory: %s", strerror(errno));
+        return -1;
+    }
+
+    // Copy the path to the output buffer.
+    strncpy(out_path, result, buffer_length - 1);
+    out_path[buffer_length - 1] = '\0';
+
+    LOG_INFO("Created secure build directory: %s", out_path);
     return 0;
 }

@@ -164,3 +164,18 @@ int write_file(const char *path, const char *content);
  * @return - `-1` - Indicates no match was found.
  */
 int find_first_glob(const char *pattern, char *out_path, size_t buffer_length);
+
+/**
+ * Creates a secure temporary directory using mkdtemp().
+ *
+ * This function creates a uniquely-named directory under /tmp with
+ * restricted permissions (0700), protecting against symlink attacks
+ * and race conditions that affect predictable directory names.
+ *
+ * @param out_path The buffer to store the created directory path.
+ * @param buffer_length The size of the output buffer.
+ *
+ * @return - `0` - Indicates success.
+ * @return - `-1` - Indicates failure.
+ */
+int create_secure_tmpdir(char *out_path, size_t buffer_length);

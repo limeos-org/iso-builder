@@ -66,7 +66,8 @@ sudo apt install \
    clang \
    make \
    libcurl4-openssl-dev \
-   libjson-c-dev
+   libjson-c-dev \
+   libssl-dev
 ```
 
 To verify all build dependencies are installed, run:
@@ -76,7 +77,8 @@ dpkg -s \
    clang \
    make \
    libcurl4-openssl-dev \
-   libjson-c-dev >/dev/null 2>&1 && echo "OK"
+   libjson-c-dev \
+   libssl-dev >/dev/null 2>&1 && echo "OK"
 ```
 
 The output should be "OK" if all is installed, nothing if any are missing.

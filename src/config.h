@@ -4,15 +4,6 @@
 // Build Configuration
 // ---
 
-/** The base directory for all build files. */
-#define CONFIG_BUILD_DIRECTORY "/tmp/limeos-build"
-
-/** The directory where component binaries are downloaded. */
-#define CONFIG_COMPONENTS_DIRECTORY CONFIG_BUILD_DIRECTORY "/components"
-
-/** The directory where the root filesystem is created. */
-#define CONFIG_ROOTFS_DIRECTORY CONFIG_BUILD_DIRECTORY "/rootfs"
-
 /** The path to the splash logo image. */
 #define CONFIG_SPLASH_LOGO_PATH "./assets/splash.png"
 

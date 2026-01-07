@@ -5,6 +5,240 @@
 
 #include "all.h"
 
+/** Size of the read buffer for computing file checksums. */
+#define CHECKSUM_BUFFER_SIZE 8192
+
+/** Length of SHA256 hash (32 bytes). */
+#define SHA256_DIGEST_LEN 32
+
+/** Length of SHA256 hash in hex format (64 chars + null). */
+#define SHA256_HEX_LENGTH 65
+
+/**
+ * Computes the SHA256 hash of a file and returns it as a hex string.
+ */
+static int compute_file_sha256(const char *path, char *out_hash, size_t hash_len)
+{
+    unsigned char hash[SHA256_DIGEST_LEN];
+    unsigned char buffer[CHECKSUM_BUFFER_SIZE];
+    unsigned int digest_len = 0;
+    EVP_MD_CTX *ctx;
+    FILE *file;
+    size_t bytes_read;
+
+    // Validate output buffer size.
+    if (hash_len < SHA256_HEX_LENGTH)
+    {
+        return -1;
+    }
+
+    // Open the file for reading.
+    file = fopen(path, "rb");
+    if (!file)
+    {
+        LOG_ERROR("Failed to open file for checksum: %s", path);
+        return -1;
+    }
+
+    // Initialize the digest context.
+    ctx = EVP_MD_CTX_new();
+    if (!ctx)
+    {
+        fclose(file);
+        return -1;
+    }
+
+    // Configure the context for SHA256.
+    if (EVP_DigestInit_ex(ctx, EVP_sha256(), NULL) != 1)
+    {
+        EVP_MD_CTX_free(ctx);
+        fclose(file);
+        return -1;
+    }
+
+    // Process the file in chunks.
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0)
+    {
+        if (EVP_DigestUpdate(ctx, buffer, bytes_read) != 1)
+        {
+            EVP_MD_CTX_free(ctx);
+            fclose(file);
+            return -1;
+        }
+    }
+
+    // Finalize the hash computation.
+    if (EVP_DigestFinal_ex(ctx, hash, &digest_len) != 1)
+    {
+        EVP_MD_CTX_free(ctx);
+        fclose(file);
+        return -1;
+    }
+
+    // Clean up resources.
+    EVP_MD_CTX_free(ctx);
+    fclose(file);
+
+    // Convert the hash to a hex string.
+    for (unsigned int i = 0; i < digest_len; i++)
+    {
+        snprintf(out_hash + (i * 2), 3, "%02x", hash[i]);
+    }
+    out_hash[SHA256_HEX_LENGTH - 1] = '\0';
+
+    return 0;
+}
+
+/**
+ * Downloads a checksums file and extracts the expected hash for a binary.
+ */
+static int fetch_expected_checksum(
+    const char *repo_name,
+    const char *version,
+    const char *binary_name,
+    char *out_hash,
+    size_t hash_len
+)
+{
+    CURL *curl;
+    CURLcode result;
+    char url[FETCH_URL_MAX_LENGTH];
+    char *checksums_data = NULL;
+    size_t checksums_size = 0;
+    FILE *checksums_stream;
+    long http_code = 0;
+
+    // Validate buffer size.
+    if (hash_len < SHA256_HEX_LENGTH)
+    {
+        return -1;
+    }
+
+    // Construct the checksums file URL.
+    snprintf(
+        url, sizeof(url),
+        "https://github.com/%s/%s/releases/download/%s/SHA256SUMS",
+        CONFIG_GITHUB_ORG, repo_name, version
+    );
+
+    // Create an in-memory stream for the checksums data.
+    checksums_stream = open_memstream(&checksums_data, &checksums_size);
+    if (!checksums_stream)
+    {
+        LOG_ERROR("Failed to create memory stream for checksums");
+        return -1;
+    }
+
+    // Initialize the curl session.
+    curl = curl_easy_init();
+    if (!curl)
+    {
+        fclose(checksums_stream);
+        free(checksums_data);
+        return -1;
+    }
+
+    // Configure curl options and perform the download.
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, checksums_stream);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
+    result = curl_easy_perform(curl);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    curl_easy_cleanup(curl);
+    fclose(checksums_stream);
+
+    // Check for download errors.
+    if (result != CURLE_OK || http_code != 200)
+    {
+        free(checksums_data);
+        return -1;
+    }
+
+    // Parse the checksums file (format: "hash  filename").
+    char *line = checksums_data;
+    char *next_line;
+    int found = 0;
+
+    while (line && *line)
+    {
+        next_line = strchr(line, '\n');
+        if (next_line)
+        {
+            *next_line = '\0';
+            next_line++;
+        }
+
+        // Skip empty lines.
+        if (strlen(line) < SHA256_HEX_LENGTH)
+        {
+            line = next_line;
+            continue;
+        }
+
+        // Check if this line is for our binary (format: "hash  filename").
+        char *filename_start = strstr(line, "  ");
+        if (filename_start)
+        {
+            filename_start += 2;
+            if (strcmp(filename_start, binary_name) == 0)
+            {
+                strncpy(out_hash, line, SHA256_HEX_LENGTH - 1);
+                out_hash[SHA256_HEX_LENGTH - 1] = '\0';
+                found = 1;
+                break;
+            }
+        }
+
+        line = next_line;
+    }
+
+    // Clean up and return the result.
+    free(checksums_data);
+    return found ? 0 : -1;
+}
+
+/**
+ * Verifies the SHA256 checksum of a downloaded file.
+ */
+static int verify_checksum(
+    const char *file_path,
+    const char *repo_name,
+    const char *version,
+    const char *binary_name
+)
+{
+    char expected_hash[SHA256_HEX_LENGTH];
+    char actual_hash[SHA256_HEX_LENGTH];
+
+    // Fetch the expected checksum from the release.
+    if (fetch_expected_checksum(repo_name, version, binary_name, expected_hash, sizeof(expected_hash)) != 0)
+    {
+        LOG_WARNING("No checksum available for %s - skipping verification", binary_name);
+        return 0;
+    }
+
+    // Compute the actual checksum of the downloaded file.
+    if (compute_file_sha256(file_path, actual_hash, sizeof(actual_hash)) != 0)
+    {
+        LOG_ERROR("Failed to compute checksum for %s", file_path);
+        return -1;
+    }
+
+    // Compare checksums.
+    if (strcasecmp(expected_hash, actual_hash) != 0)
+    {
+        LOG_ERROR("Checksum mismatch for %s", binary_name);
+        LOG_ERROR("  Expected: %s", expected_hash);
+        LOG_ERROR("  Actual:   %s", actual_hash);
+        return -1;
+    }
+
+    LOG_INFO("Checksum verified for %s", binary_name);
+    return 0;
+}
+
 static int copy_local_component(const Component *component, const char *output_directory)
 {
     char local_path[COMMAND_PATH_MAX_LENGTH];
@@ -144,6 +378,13 @@ static int download_remote(
     }
 
     LOG_INFO("Downloaded %s", component->repo_name);
+
+    // Verify the checksum of the downloaded file.
+    if (verify_checksum(output_path, component->repo_name, resolved_version, component->repo_name) != 0)
+    {
+        remove(output_path);
+        return -1;
+    }
 
     return 0;
 }
