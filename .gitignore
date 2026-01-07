@@ -31,3 +31,6 @@ __pycache__/
 # Ignore user-specific config files
 .vscode/
 .idea/
+
+# Ignore ISO files
+*.iso
