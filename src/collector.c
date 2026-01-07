@@ -5,9 +5,6 @@
 
 #include "all.h"
 
-/** The GitHub organization hosting LimeOS component repositories. */
-#define GITHUB_ORG "limeos-org"
-
 static int copy_local(const char *name, const char *output_directory)
 {
     char local_path[MAX_PATH_LENGTH];
@@ -75,7 +72,7 @@ static int download_remote(
     FILE *output_file;
     char url[MAX_URL_LENGTH];
     char output_path[MAX_PATH_LENGTH];
-    char resolved_version[VERSION_MAX_LENGTH];
+    char resolved_version[CONFIG_VERSION_MAX_LENGTH];
 
     // Resolve the version to the latest within the major version.
     int resolve_result = resolve_version(
@@ -101,7 +98,7 @@ static int download_remote(
     snprintf(
         url, sizeof(url),
         "https://github.com/%s/%s/releases/download/%s/%s",
-        GITHUB_ORG, name, resolved_version, name
+        CONFIG_GITHUB_ORG, name, resolved_version, name
     );
 
     // Construct the local output file path.
@@ -135,7 +132,7 @@ static int download_remote(
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, handle_write_data);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, output_file);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "limeos-iso-builder/1.0");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
 
     // Perform the download.
     result = curl_easy_perform(curl);

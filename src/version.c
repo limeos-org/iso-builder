@@ -6,20 +6,6 @@
 #include "all.h"
 #include <json-c/json.h>
 
-/** The GitHub organization hosting LimeOS component repositories. */
-#define VERSION_GITHUB_ORG "limeos-org"
-
-/** The GitHub API base URL for releases. */
-#define VERSION_API_BASE "https://api.github.com/repos"
-
-/**
- * The initial buffer size for API response data.
- *
- * 8KB is sufficient for typical GitHub releases API responses containing
- * 10-20 releases. The buffer grows dynamically if needed.
- */
-#define VERSION_INITIAL_BUFFER_SIZE 8192
-
 /** A type representing a dynamically growing buffer for HTTP response data. */
 typedef struct
 {
@@ -74,18 +60,18 @@ static int fetch_releases_json(
     snprintf(
         url, sizeof(url),
         "%s/%s/%s/releases",
-        VERSION_API_BASE, VERSION_GITHUB_ORG, component
+        CONFIG_GITHUB_API_BASE, CONFIG_GITHUB_ORG, component
     );
 
     // Allocate the initial response buffer.
-    buffer.data = malloc(VERSION_INITIAL_BUFFER_SIZE);
+    buffer.data = malloc(CONFIG_API_BUFFER_SIZE);
     if (!buffer.data)
     {
         return -1;
     }
     buffer.data[0] = '\0';
     buffer.size = 0;
-    buffer.capacity = VERSION_INITIAL_BUFFER_SIZE;
+    buffer.capacity = CONFIG_API_BUFFER_SIZE;
 
     // Initialize the curl session.
     curl = curl_easy_init();
@@ -104,7 +90,7 @@ static int fetch_releases_json(
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, handle_api_response);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "limeos-iso-builder/1.0");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
 
     // Perform the API request.
     result = curl_easy_perform(curl);

@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 
     // Clean up old build files.
     LOG_INFO("Cleaning old build files...");
-    run_command("rm -rf " BUILD_DIRECTORY);
+    rm_rf(BUILD_DIRECTORY);
 
     // Initialize the collector module.
     if (init_collector() != 0)

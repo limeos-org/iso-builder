@@ -5,23 +5,12 @@
 
 #include "all.h"
 
-/**
- * The size of the EFI boot image in megabytes.
- *
- * 4MB provides sufficient space for the GRUB EFI binary (~1MB) plus
- * headroom for FAT filesystem overhead and future additions.
- */
-#define EFI_IMAGE_SIZE_MB 4
-
-/** The path to the MBR template for hybrid ISO. */
-#define ISOLINUX_MBR_PATH "/usr/lib/ISOLINUX/isohdpfx.bin"
-
 static int create_staging_directory(const char *staging_path)
 {
-    char command[MAX_COMMAND_LENGTH];
+    char live_path[MAX_PATH_LENGTH];
 
-    snprintf(command, sizeof(command), "mkdir -p %s/live", staging_path);
-    if (run_command(command) != 0)
+    snprintf(live_path, sizeof(live_path), "%s/live", staging_path);
+    if (mkdir_p(live_path) != 0)
     {
         LOG_ERROR("Failed to create staging directory");
         return -1;
@@ -33,13 +22,30 @@ static int create_staging_directory(const char *staging_path)
 static int create_squashfs(const char *rootfs_path, const char *staging_path)
 {
     char command[MAX_COMMAND_LENGTH];
+    char quoted_rootfs[SHELL_QUOTED_MAX_LENGTH];
+    char squashfs_path[MAX_PATH_LENGTH];
+    char quoted_squashfs[SHELL_QUOTED_MAX_LENGTH];
 
     // Use xz compression for best compression ratio on live filesystem.
     LOG_INFO("Creating squashfs filesystem...");
+
+    snprintf(squashfs_path, sizeof(squashfs_path), "%s/live/filesystem.squashfs", staging_path);
+
+    if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
+    {
+        LOG_ERROR("Failed to quote rootfs path");
+        return -1;
+    }
+    if (shell_quote_path(squashfs_path, quoted_squashfs, sizeof(quoted_squashfs)) != 0)
+    {
+        LOG_ERROR("Failed to quote squashfs path");
+        return -1;
+    }
+
     snprintf(
         command, sizeof(command),
-        "mksquashfs %s %s/live/filesystem.squashfs -comp xz -noappend",
-        rootfs_path, staging_path
+        "mksquashfs %s %s -comp xz -noappend",
+        quoted_rootfs, quoted_squashfs
     );
     if (run_command(command) != 0)
     {
@@ -52,46 +58,52 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
 
 static int copy_boot_files(const char *rootfs_path, const char *staging_path)
 {
-    char command[MAX_COMMAND_LENGTH];
+    char src_path[MAX_PATH_LENGTH];
+    char dst_path[MAX_PATH_LENGTH];
 
     // Create boot directory.
-    snprintf(command, sizeof(command), "mkdir -p %s/boot/grub", staging_path);
-    if (run_command(command) != 0)
+    snprintf(dst_path, sizeof(dst_path), "%s/boot/grub", staging_path);
+    if (mkdir_p(dst_path) != 0)
     {
         LOG_ERROR("Failed to create boot directory");
         return -1;
     }
 
     // Copy kernel.
-    snprintf(
-        command, sizeof(command),
-        "cp %s/boot/vmlinuz %s/boot/vmlinuz",
-        rootfs_path, staging_path
-    );
-    if (run_command(command) != 0)
+    snprintf(src_path, sizeof(src_path), "%s/boot/vmlinuz", rootfs_path);
+    snprintf(dst_path, sizeof(dst_path), "%s/boot/vmlinuz", staging_path);
+    if (copy_file(src_path, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy kernel");
         return -1;
     }
 
     // Copy initrd.
-    snprintf(
-        command, sizeof(command),
-        "cp %s/boot/initrd.img %s/boot/initrd.img",
-        rootfs_path, staging_path
-    );
-    if (run_command(command) != 0)
+    snprintf(src_path, sizeof(src_path), "%s/boot/initrd.img", rootfs_path);
+    snprintf(dst_path, sizeof(dst_path), "%s/boot/initrd.img", staging_path);
+    if (copy_file(src_path, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy initrd");
         return -1;
     }
 
     // Copy isolinux files.
-    snprintf(
-        command, sizeof(command),
-        "cp -r %s/isolinux %s/",
-        rootfs_path, staging_path
-    );
+    char command[MAX_COMMAND_LENGTH];
+    char quoted_src[SHELL_QUOTED_MAX_LENGTH];
+    char quoted_dst[SHELL_QUOTED_MAX_LENGTH];
+
+    snprintf(src_path, sizeof(src_path), "%s/isolinux", rootfs_path);
+    if (shell_quote_path(src_path, quoted_src, sizeof(quoted_src)) != 0)
+    {
+        LOG_ERROR("Failed to quote isolinux source path");
+        return -1;
+    }
+    if (shell_quote_path(staging_path, quoted_dst, sizeof(quoted_dst)) != 0)
+    {
+        LOG_ERROR("Failed to quote staging path");
+        return -1;
+    }
+    snprintf(command, sizeof(command), "cp -r %s %s/", quoted_src, quoted_dst);
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to copy isolinux");
@@ -99,12 +111,9 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     }
 
     // Copy GRUB config.
-    snprintf(
-        command, sizeof(command),
-        "cp %s/boot/grub/grub.cfg %s/boot/grub/",
-        rootfs_path, staging_path
-    );
-    if (run_command(command) != 0)
+    snprintf(src_path, sizeof(src_path), "%s/boot/grub/grub.cfg", rootfs_path);
+    snprintf(dst_path, sizeof(dst_path), "%s/boot/grub/grub.cfg", staging_path);
+    if (copy_file(src_path, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy GRUB config");
         return -1;
@@ -118,15 +127,30 @@ static int setup_efi_image(const char *staging_path)
     char command[MAX_COMMAND_LENGTH];
     char efi_img_path[MAX_PATH_LENGTH];
     char mount_path[MAX_PATH_LENGTH];
+    char efi_boot_dir[MAX_PATH_LENGTH];
+    char efi_binary_dst[MAX_PATH_LENGTH];
+    char quoted_efi_img[SHELL_QUOTED_MAX_LENGTH];
+    char quoted_mount[SHELL_QUOTED_MAX_LENGTH];
 
     snprintf(efi_img_path, sizeof(efi_img_path), "%s/boot/grub/efiboot.img", staging_path);
     snprintf(mount_path, sizeof(mount_path), "%s/efi_mount", staging_path);
+
+    if (shell_quote_path(efi_img_path, quoted_efi_img, sizeof(quoted_efi_img)) != 0)
+    {
+        LOG_ERROR("Failed to quote EFI image path");
+        return -1;
+    }
+    if (shell_quote_path(mount_path, quoted_mount, sizeof(quoted_mount)) != 0)
+    {
+        LOG_ERROR("Failed to quote mount path");
+        return -1;
+    }
 
     // Create empty EFI image.
     snprintf(
         command, sizeof(command),
         "dd if=/dev/zero of=%s bs=1M count=%d",
-        efi_img_path, EFI_IMAGE_SIZE_MB
+        quoted_efi_img, CONFIG_EFI_IMAGE_SIZE_MB
     );
     if (run_command(command) != 0)
     {
@@ -135,7 +159,7 @@ static int setup_efi_image(const char *staging_path)
     }
 
     // Format as FAT12, appropriate for small (<16MB) EFI system partitions.
-    snprintf(command, sizeof(command), "mkfs.fat -F 12 %s", efi_img_path);
+    snprintf(command, sizeof(command), "mkfs.fat -F 12 %s", quoted_efi_img);
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to format EFI image");
@@ -143,13 +167,12 @@ static int setup_efi_image(const char *staging_path)
     }
 
     // Mount the EFI image.
-    snprintf(command, sizeof(command), "mkdir -p %s", mount_path);
-    if (run_command(command) != 0)
+    if (mkdir_p(mount_path) != 0)
     {
         LOG_WARNING("Failed to create EFI mount directory: %s", mount_path);
     }
 
-    snprintf(command, sizeof(command), "mount -o loop %s %s", efi_img_path, mount_path);
+    snprintf(command, sizeof(command), "mount -o loop %s %s", quoted_efi_img, quoted_mount);
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to mount EFI image");
@@ -157,31 +180,37 @@ static int setup_efi_image(const char *staging_path)
     }
 
     // Create EFI boot directory.
-    snprintf(command, sizeof(command), "mkdir -p %s/EFI/BOOT", mount_path);
-    if (run_command(command) != 0)
+    snprintf(efi_boot_dir, sizeof(efi_boot_dir), "%s/EFI/BOOT", mount_path);
+    if (mkdir_p(efi_boot_dir) != 0)
     {
         LOG_WARNING("Failed to create EFI boot directory");
     }
 
     // Copy GRUB EFI binary.
-    snprintf(
-        command, sizeof(command),
-        "cp /usr/lib/grub/x86_64-efi/monolithic/grubx64.efi %s/EFI/BOOT/BOOTX64.EFI",
-        mount_path
-    );
-    if (run_command(command) != 0)
+    snprintf(efi_binary_dst, sizeof(efi_binary_dst), "%s/EFI/BOOT/BOOTX64.EFI", mount_path);
+    if (copy_file(CONFIG_GRUB_EFI_PATH, efi_binary_dst) != 0)
     {
         LOG_WARNING("Failed to copy GRUB EFI binary, trying grub-mkimage");
+
+        char quoted_efi_dst[SHELL_QUOTED_MAX_LENGTH];
+        if (shell_quote_path(efi_binary_dst, quoted_efi_dst, sizeof(quoted_efi_dst)) != 0)
+        {
+            LOG_ERROR("Failed to quote EFI binary destination path");
+            snprintf(command, sizeof(command), "umount %s", quoted_mount);
+            run_command(command);
+            return -1;
+        }
+
         snprintf(
             command, sizeof(command),
-            "grub-mkimage -o %s/EFI/BOOT/BOOTX64.EFI -p /boot/grub -O x86_64-efi "
+            "grub-mkimage -o %s -p /boot/grub -O x86_64-efi "
             "normal boot linux part_gpt part_msdos fat iso9660",
-            mount_path
+            quoted_efi_dst
         );
         if (run_command(command) != 0)
         {
             LOG_ERROR("Failed to create GRUB EFI image");
-            snprintf(command, sizeof(command), "umount %s", mount_path);
+            snprintf(command, sizeof(command), "umount %s", quoted_mount);
             if (run_command(command) != 0)
             {
                 LOG_WARNING("Failed to unmount EFI image on error: %s", mount_path);
@@ -191,13 +220,13 @@ static int setup_efi_image(const char *staging_path)
     }
 
     // Unmount and clean up.
-    snprintf(command, sizeof(command), "umount %s", mount_path);
+    snprintf(command, sizeof(command), "umount %s", quoted_mount);
     if (run_command(command) != 0)
     {
         LOG_WARNING("Failed to unmount EFI image: %s", mount_path);
     }
 
-    snprintf(command, sizeof(command), "rmdir %s", mount_path);
+    snprintf(command, sizeof(command), "rmdir %s", quoted_mount);
     if (run_command(command) != 0)
     {
         LOG_WARNING("Failed to remove EFI mount directory: %s", mount_path);
@@ -209,6 +238,19 @@ static int setup_efi_image(const char *staging_path)
 static int assemble_iso(const char *staging_path, const char *output_path)
 {
     char command[MAX_COMMAND_LENGTH];
+    char quoted_output[SHELL_QUOTED_MAX_LENGTH];
+    char quoted_staging[SHELL_QUOTED_MAX_LENGTH];
+
+    if (shell_quote_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
+    {
+        LOG_ERROR("Failed to quote output path");
+        return -1;
+    }
+    if (shell_quote_path(staging_path, quoted_staging, sizeof(quoted_staging)) != 0)
+    {
+        LOG_ERROR("Failed to quote staging path");
+        return -1;
+    }
 
     // Build hybrid ISO supporting both BIOS (isolinux) and UEFI (EFI image) boot.
     // -boot-load-size 4: Load 4 sectors (2KB) of boot image per El Torito spec.
@@ -226,7 +268,7 @@ static int assemble_iso(const char *staging_path, const char *output_path)
         "-e boot/grub/efiboot.img "
         "-no-emul-boot -isohybrid-gpt-basdat "
         "%s",
-        output_path, ISOLINUX_MBR_PATH, staging_path
+        quoted_output, CONFIG_ISOLINUX_MBR_PATH, quoted_staging
     );
     if (run_command(command) != 0)
     {
@@ -239,10 +281,7 @@ static int assemble_iso(const char *staging_path, const char *output_path)
 
 static void cleanup_staging(const char *staging_path)
 {
-    char command[MAX_COMMAND_LENGTH];
-
-    snprintf(command, sizeof(command), "rm -rf %s", staging_path);
-    if (run_command(command) != 0)
+    if (rm_rf(staging_path) != 0)
     {
         LOG_WARNING("Failed to clean up staging directory: %s", staging_path);
     }

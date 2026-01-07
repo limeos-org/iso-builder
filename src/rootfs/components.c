@@ -6,14 +6,15 @@
 
 int install_components(const char *rootfs_path, const char *components_path)
 {
-    char command[MAX_COMMAND_LENGTH];
-    char path[MAX_PATH_LENGTH];
+    char src_path[MAX_PATH_LENGTH];
+    char dst_path[MAX_PATH_LENGTH];
+    char bin_dir[MAX_PATH_LENGTH];
 
     LOG_INFO("Installing components into rootfs...");
 
     // Create the target directory for binaries.
-    snprintf(path, sizeof(path), "%s/usr/local/bin", rootfs_path);
-    if (mkdir_p(path) != 0)
+    snprintf(bin_dir, sizeof(bin_dir), "%s" CONFIG_INSTALL_BIN_PATH, rootfs_path);
+    if (mkdir_p(bin_dir) != 0)
     {
         return -1;
     }
@@ -22,24 +23,17 @@ int install_components(const char *rootfs_path, const char *components_path)
     for (int i = 0; i < REQUIRED_COMPONENTS_COUNT; i++)
     {
         // Copy the required component binary.
-        snprintf(
-            command, sizeof(command),
-            "cp %s/%s %s/usr/local/bin/",
-            components_path, REQUIRED_COMPONENTS[i], rootfs_path
-        );
-        if (run_command(command) != 0)
+        snprintf(src_path, sizeof(src_path), "%s/%s", components_path, REQUIRED_COMPONENTS[i]);
+        snprintf(dst_path, sizeof(dst_path), "%s/%s", bin_dir, REQUIRED_COMPONENTS[i]);
+
+        if (copy_file(src_path, dst_path) != 0)
         {
             LOG_ERROR("Failed to install required component: %s", REQUIRED_COMPONENTS[i]);
             return -1;
         }
 
         // Make the binary executable.
-        snprintf(
-            command, sizeof(command),
-            "chmod +x %s/usr/local/bin/%s",
-            rootfs_path, REQUIRED_COMPONENTS[i]
-        );
-        run_command(command);
+        chmod_file("+x", dst_path);
 
         LOG_INFO("Installed %s", REQUIRED_COMPONENTS[i]);
     }
@@ -48,32 +42,23 @@ int install_components(const char *rootfs_path, const char *components_path)
     for (int i = 0; i < OPTIONAL_COMPONENTS_COUNT; i++)
     {
         // Check if the optional component binary exists.
-        snprintf(path, sizeof(path), "%s/%s", components_path, OPTIONAL_COMPONENTS[i]);
-        if (!file_exists(path))
+        snprintf(src_path, sizeof(src_path), "%s/%s", components_path, OPTIONAL_COMPONENTS[i]);
+        if (!file_exists(src_path))
         {
             LOG_INFO("Skipping optional component: %s", OPTIONAL_COMPONENTS[i]);
             continue;
         }
 
         // Copy the optional component binary.
-        snprintf(
-            command, sizeof(command),
-            "cp %s/%s %s/usr/local/bin/",
-            components_path, OPTIONAL_COMPONENTS[i], rootfs_path
-        );
-        if (run_command(command) != 0)
+        snprintf(dst_path, sizeof(dst_path), "%s/%s", bin_dir, OPTIONAL_COMPONENTS[i]);
+        if (copy_file(src_path, dst_path) != 0)
         {
             LOG_WARNING("Failed to install optional component: %s", OPTIONAL_COMPONENTS[i]);
             continue;
         }
 
         // Make the binary executable.
-        snprintf(
-            command, sizeof(command),
-            "chmod +x %s/usr/local/bin/%s",
-            rootfs_path, OPTIONAL_COMPONENTS[i]
-        );
-        run_command(command);
+        chmod_file("+x", dst_path);
 
         LOG_INFO("Installed %s", OPTIONAL_COMPONENTS[i]);
     }

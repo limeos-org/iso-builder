@@ -12,30 +12,20 @@
 #include <time.h>
 #include <unistd.h>
 
-/**
- * The maximum length for constructed shell command strings.
- *
- * 512 bytes accommodates typical commands with two full paths plus flags.
- */
-#define MAX_COMMAND_LENGTH 512
+#include "config.h"
 
-/**
- * The maximum length for file path strings.
- *
- * 256 bytes matches the common PATH_MAX on most Unix systems.
- */
-#define MAX_PATH_LENGTH 256
+/** Backward-compatible alias for CONFIG_MAX_COMMAND_LENGTH. */
+#define MAX_COMMAND_LENGTH CONFIG_MAX_COMMAND_LENGTH
 
-/**
- * The maximum length for URL strings.
- *
- * 512 bytes accommodates GitHub API URLs with organization, repo, and endpoint.
- */
-#define MAX_URL_LENGTH 512
+/** Backward-compatible alias for CONFIG_MAX_PATH_LENGTH. */
+#define MAX_PATH_LENGTH CONFIG_MAX_PATH_LENGTH
+
+/** Backward-compatible alias for CONFIG_MAX_URL_LENGTH. */
+#define MAX_URL_LENGTH CONFIG_MAX_URL_LENGTH
 
 /** The list of required LimeOS component binaries. */
 static const char *REQUIRED_COMPONENTS[] = {
-    "installation-wizard"
+    CONFIG_INSTALLER_BINARY_NAME
 };
 
 /** The number of required components. */
@@ -59,8 +49,7 @@ static const char *OPTIONAL_COMPONENTS[] = {
 #include "rootfs/components.h"
 #include "rootfs/create.h"
 #include "rootfs/init.h"
+#include "utils/shell.h"
 #include "utils/command.h"
-#include "utils/fs.h"
 #include "utils/log.h"
-#include "utils/validate.h"
 #include "utils/version.h"

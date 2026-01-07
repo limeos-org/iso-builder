@@ -4,15 +4,40 @@
  */
 
 #include "all.h"
+#include <glob.h>
 
-/** The kernel command line parameters for boot. */
-#define BOOT_KERNEL_PARAMS "boot=live quiet splash loglevel=0"
+/**
+ * Finds the first file matching a glob pattern.
+ *
+ * @param pattern The glob pattern to match.
+ * @param out_path The buffer to store the matched path.
+ * @param buffer_length The size of the output buffer.
+ *
+ * @return - `0` - Indicates a match was found.
+ * @return - `-1` - Indicates no match was found.
+ */
+static int find_first_glob(
+    const char *pattern,
+    char *out_path,
+    size_t buffer_length
+)
+{
+    glob_t glob_result;
+    int ret;
 
-/** The default kernel image path within the ISO. */
-#define BOOT_KERNEL_PATH "/boot/vmlinuz"
+    ret = glob(pattern, GLOB_NOSORT, NULL, &glob_result);
+    if (ret != 0 || glob_result.gl_pathc == 0)
+    {
+        globfree(&glob_result);
+        return -1;
+    }
 
-/** The default initrd image path within the ISO. */
-#define BOOT_INITRD_PATH "/boot/initrd.img"
+    strncpy(out_path, glob_result.gl_pathv[0], buffer_length - 1);
+    out_path[buffer_length - 1] = '\0';
+
+    globfree(&glob_result);
+    return 0;
+}
 
 int setup_grub(const char *rootfs_path)
 {
@@ -40,8 +65,8 @@ int setup_grub(const char *rootfs_path)
         "set default=0\n"
         "\n"
         "menuentry \"LimeOS Installer\" {\n"
-        "    linux " BOOT_KERNEL_PATH " " BOOT_KERNEL_PARAMS "\n"
-        "    initrd " BOOT_INITRD_PATH "\n"
+        "    linux " CONFIG_BOOT_KERNEL_PATH " " CONFIG_BOOT_KERNEL_PARAMS "\n"
+        "    initrd " CONFIG_BOOT_INITRD_PATH "\n"
         "}\n";
 
     // Write the GRUB configuration file.
@@ -59,7 +84,7 @@ int setup_isolinux(const char *rootfs_path)
 {
     char isolinux_dir[MAX_PATH_LENGTH];
     char isolinux_cfg_path[MAX_PATH_LENGTH];
-    char command[MAX_COMMAND_LENGTH];
+    char dst_path[MAX_PATH_LENGTH];
 
     LOG_INFO("Configuring isolinux for BIOS boot");
 
@@ -74,24 +99,16 @@ int setup_isolinux(const char *rootfs_path)
     }
 
     // Copy isolinux.bin from the system.
-    snprintf(
-        command, sizeof(command),
-        "cp /usr/lib/ISOLINUX/isolinux.bin %s/",
-        isolinux_dir
-    );
-    if (run_command(command) != 0)
+    snprintf(dst_path, sizeof(dst_path), "%s/isolinux.bin", isolinux_dir);
+    if (copy_file(CONFIG_ISOLINUX_BIN_PATH, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy isolinux.bin");
         return -2;
     }
 
     // Copy ldlinux.c32 from the system.
-    snprintf(
-        command, sizeof(command),
-        "cp /usr/lib/syslinux/modules/bios/ldlinux.c32 %s/",
-        isolinux_dir
-    );
-    if (run_command(command) != 0)
+    snprintf(dst_path, sizeof(dst_path), "%s/ldlinux.c32", isolinux_dir);
+    if (copy_file(CONFIG_LDLINUX_PATH, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy ldlinux.c32");
         return -3;
@@ -111,8 +128,8 @@ int setup_isolinux(const char *rootfs_path)
         "\n"
         "LABEL limeos\n"
         "    MENU LABEL LimeOS Installer\n"
-        "    KERNEL " BOOT_KERNEL_PATH "\n"
-        "    APPEND initrd=" BOOT_INITRD_PATH " " BOOT_KERNEL_PARAMS "\n";
+        "    KERNEL " CONFIG_BOOT_KERNEL_PATH "\n"
+        "    APPEND initrd=" CONFIG_BOOT_INITRD_PATH " " CONFIG_BOOT_KERNEL_PARAMS "\n";
 
     // Write the isolinux configuration file.
     if (write_file(isolinux_cfg_path, isolinux_cfg) != 0)
@@ -130,7 +147,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     char theme_dir[MAX_PATH_LENGTH];
     char theme_file_path[MAX_PATH_LENGTH];
     char splash_dest[MAX_PATH_LENGTH];
-    char command[MAX_COMMAND_LENGTH];
+    char theme_cmd[MAX_PATH_LENGTH];
 
     LOG_INFO("Configuring Plymouth splash screen");
 
@@ -144,7 +161,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     // Construct the Plymouth theme directory path.
     snprintf(
         theme_dir, sizeof(theme_dir),
-        "%s/usr/share/plymouth/themes/limeos", rootfs_path
+        "%s" CONFIG_PLYMOUTH_THEMES_DIR "/" CONFIG_PLYMOUTH_THEME_NAME, rootfs_path
     );
 
     // Create the Plymouth theme directory.
@@ -165,7 +182,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     }
 
     // Construct the theme file path.
-    snprintf(theme_file_path, sizeof(theme_file_path), "%s/limeos.plymouth", theme_dir);
+    snprintf(theme_file_path, sizeof(theme_file_path), "%s/" CONFIG_PLYMOUTH_THEME_NAME ".plymouth", theme_dir);
 
     // Define the Plymouth theme configuration.
     const char *theme_cfg =
@@ -175,8 +192,8 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
         "ModuleName=script\n"
         "\n"
         "[script]\n"
-        "ImageDir=/usr/share/plymouth/themes/limeos\n"
-        "ScriptFile=/usr/share/plymouth/themes/limeos/limeos.script\n";
+        "ImageDir=" CONFIG_PLYMOUTH_THEMES_DIR "/" CONFIG_PLYMOUTH_THEME_NAME "\n"
+        "ScriptFile=" CONFIG_PLYMOUTH_THEMES_DIR "/" CONFIG_PLYMOUTH_THEME_NAME "/" CONFIG_PLYMOUTH_THEME_NAME ".script\n";
 
     // Write the Plymouth theme file.
     if (write_file(theme_file_path, theme_cfg) != 0)
@@ -186,7 +203,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
 
     // Construct the script file path.
     char script_path[MAX_PATH_LENGTH];
-    snprintf(script_path, sizeof(script_path), "%s/limeos.script", theme_dir);
+    snprintf(script_path, sizeof(script_path), "%s/" CONFIG_PLYMOUTH_THEME_NAME ".script", theme_dir);
 
     // Define the Plymouth script.
     const char *script_cfg =
@@ -204,35 +221,30 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     }
 
     // Set LimeOS as the default Plymouth theme.
-    snprintf(
-        command, sizeof(command),
-        "chroot %s plymouth-set-default-theme limeos",
-        rootfs_path
-    );
-    if (run_command(command) != 0)
+    snprintf(theme_cmd, sizeof(theme_cmd), "plymouth-set-default-theme %s", CONFIG_PLYMOUTH_THEME_NAME);
+    if (run_chroot(rootfs_path, theme_cmd) != 0)
     {
         LOG_WARNING("Failed to set Plymouth theme (plymouth may not be installed)");
     }
 
     // Regenerate initramfs to include the new Plymouth theme.
     LOG_INFO("Regenerating initramfs with new theme...");
-    snprintf(
-        command, sizeof(command),
-        "chroot %s update-initramfs -u",
-        rootfs_path
-    );
-    if (run_command(command) != 0)
+    if (run_chroot(rootfs_path, "update-initramfs -u") != 0)
     {
         LOG_WARNING("Failed to regenerate initramfs");
     }
 
-    // Re-copy the updated initrd.
-    snprintf(
-        command, sizeof(command),
-        "cp $(ls %s/boot/initrd.img-* | head -1) %s/boot/initrd.img",
-        rootfs_path, rootfs_path
-    );
-    run_command(command);
+    // Re-copy the updated initrd using safe glob.
+    char initrd_pattern[MAX_PATH_LENGTH];
+    char initrd_src[MAX_PATH_LENGTH];
+    char initrd_dst[MAX_PATH_LENGTH];
+
+    snprintf(initrd_pattern, sizeof(initrd_pattern), "%s/boot/initrd.img-*", rootfs_path);
+    if (find_first_glob(initrd_pattern, initrd_src, sizeof(initrd_src)) == 0)
+    {
+        snprintf(initrd_dst, sizeof(initrd_dst), "%s/boot/initrd.img", rootfs_path);
+        copy_file(initrd_src, initrd_dst);
+    }
 
     LOG_INFO("Plymouth splash configured successfully");
 
