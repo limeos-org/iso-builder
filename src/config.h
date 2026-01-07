@@ -5,7 +5,7 @@
 // ---
 
 /** The base directory for all build files. */
-#define CONFIG_BUILD_DIRECTORY "./build"
+#define CONFIG_BUILD_DIRECTORY "/tmp/limeos-build"
 
 /** The directory where component binaries are downloaded. */
 #define CONFIG_COMPONENTS_DIRECTORY CONFIG_BUILD_DIRECTORY "/components"
@@ -17,7 +17,7 @@
 #define CONFIG_SPLASH_LOGO_PATH "./assets/splash.png"
 
 /** The path where the final ISO will be created. */
-#define CONFIG_OUTPUT_ISO_PATH CONFIG_BUILD_DIRECTORY "/limeos.iso"
+#define CONFIG_OUTPUT_ISO_PATH "./dist/limeos.iso"
 
 // ---
 // Github Configuration
