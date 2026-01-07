@@ -1,6 +1,5 @@
 #pragma once
-
-#include <stddef.h>
+#include "../all.h"
 
 /**
  * Resolves the latest release version within a major version for a component.

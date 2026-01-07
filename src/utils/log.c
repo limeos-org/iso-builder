@@ -1,8 +1,9 @@
 /**
- * This code is responsible for logging messages with timestamps and source locations.
+ * This code is responsible for logging messages with timestamps and source
+ * locations.
  */
 
-#include "../all.h"
+#include "all.h"
 
 void log_message(const char* severity, const char* file, int line, const char* message, ...)
 {

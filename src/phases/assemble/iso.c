@@ -1,13 +1,12 @@
 /**
- * This code is responsible for assembling the final bootable ISO image
- * using xorriso.
+ * This code is responsible for assembling the final bootable ISO image.
  */
 
 #include "all.h"
 
 static int create_staging_directory(const char *staging_path)
 {
-    char live_path[MAX_PATH_LENGTH];
+    char live_path[COMMAND_PATH_MAX_LENGTH];
 
     snprintf(live_path, sizeof(live_path), "%s/live", staging_path);
     if (mkdir_p(live_path) != 0)
@@ -21,10 +20,10 @@ static int create_staging_directory(const char *staging_path)
 
 static int create_squashfs(const char *rootfs_path, const char *staging_path)
 {
-    char command[MAX_COMMAND_LENGTH];
-    char quoted_rootfs[SHELL_QUOTED_MAX_LENGTH];
-    char squashfs_path[MAX_PATH_LENGTH];
-    char quoted_squashfs[SHELL_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
+    char squashfs_path[COMMAND_PATH_MAX_LENGTH];
+    char quoted_squashfs[COMMAND_QUOTED_MAX_LENGTH];
 
     // Use xz compression for best compression ratio on live filesystem.
     LOG_INFO("Creating squashfs filesystem...");
@@ -58,8 +57,8 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
 
 static int copy_boot_files(const char *rootfs_path, const char *staging_path)
 {
-    char src_path[MAX_PATH_LENGTH];
-    char dst_path[MAX_PATH_LENGTH];
+    char src_path[COMMAND_PATH_MAX_LENGTH];
+    char dst_path[COMMAND_PATH_MAX_LENGTH];
 
     // Create boot directory.
     snprintf(dst_path, sizeof(dst_path), "%s/boot/grub", staging_path);
@@ -88,9 +87,9 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     }
 
     // Copy isolinux files.
-    char command[MAX_COMMAND_LENGTH];
-    char quoted_src[SHELL_QUOTED_MAX_LENGTH];
-    char quoted_dst[SHELL_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
 
     snprintf(src_path, sizeof(src_path), "%s/isolinux", rootfs_path);
     if (shell_quote_path(src_path, quoted_src, sizeof(quoted_src)) != 0)
@@ -124,13 +123,13 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
 
 static int setup_efi_image(const char *staging_path)
 {
-    char command[MAX_COMMAND_LENGTH];
-    char efi_img_path[MAX_PATH_LENGTH];
-    char mount_path[MAX_PATH_LENGTH];
-    char efi_boot_dir[MAX_PATH_LENGTH];
-    char efi_binary_dst[MAX_PATH_LENGTH];
-    char quoted_efi_img[SHELL_QUOTED_MAX_LENGTH];
-    char quoted_mount[SHELL_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char efi_img_path[COMMAND_PATH_MAX_LENGTH];
+    char mount_path[COMMAND_PATH_MAX_LENGTH];
+    char efi_boot_dir[COMMAND_PATH_MAX_LENGTH];
+    char efi_binary_dst[COMMAND_PATH_MAX_LENGTH];
+    char quoted_efi_img[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_mount[COMMAND_QUOTED_MAX_LENGTH];
 
     snprintf(efi_img_path, sizeof(efi_img_path), "%s/boot/grub/efiboot.img", staging_path);
     snprintf(mount_path, sizeof(mount_path), "%s/efi_mount", staging_path);
@@ -192,7 +191,7 @@ static int setup_efi_image(const char *staging_path)
     {
         LOG_WARNING("Failed to copy GRUB EFI binary, trying grub-mkimage");
 
-        char quoted_efi_dst[SHELL_QUOTED_MAX_LENGTH];
+        char quoted_efi_dst[COMMAND_QUOTED_MAX_LENGTH];
         if (shell_quote_path(efi_binary_dst, quoted_efi_dst, sizeof(quoted_efi_dst)) != 0)
         {
             LOG_ERROR("Failed to quote EFI binary destination path");
@@ -235,11 +234,11 @@ static int setup_efi_image(const char *staging_path)
     return 0;
 }
 
-static int assemble_iso(const char *staging_path, const char *output_path)
+static int run_xorriso(const char *staging_path, const char *output_path)
 {
-    char command[MAX_COMMAND_LENGTH];
-    char quoted_output[SHELL_QUOTED_MAX_LENGTH];
-    char quoted_staging[SHELL_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_output[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_staging[COMMAND_QUOTED_MAX_LENGTH];
 
     if (shell_quote_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
     {
@@ -252,7 +251,8 @@ static int assemble_iso(const char *staging_path, const char *output_path)
         return -1;
     }
 
-    // Build hybrid ISO supporting both BIOS (isolinux) and UEFI (EFI image) boot.
+    // Build hybrid ISO supporting both BIOS (isolinux) and UEFI (EFI image)
+    // boot.
     // -boot-load-size 4: Load 4 sectors (2KB) of boot image per El Torito spec.
     // -isohybrid-gpt-basdat: Mark EFI partition as basic data for GPT systems.
     LOG_INFO("Running xorriso to create hybrid ISO...");
@@ -289,7 +289,7 @@ static void cleanup_staging(const char *staging_path)
 
 int create_iso(const char *rootfs_path, const char *output_path)
 {
-    char staging_path[MAX_PATH_LENGTH];
+    char staging_path[COMMAND_PATH_MAX_LENGTH];
 
     LOG_INFO("Creating bootable ISO image...");
 
@@ -324,7 +324,7 @@ int create_iso(const char *rootfs_path, const char *output_path)
     }
 
     // Assemble the final ISO.
-    if (assemble_iso(staging_path, output_path) != 0)
+    if (run_xorriso(staging_path, output_path) != 0)
     {
         cleanup_staging(staging_path);
         return -5;

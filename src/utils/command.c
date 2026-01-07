@@ -1,8 +1,76 @@
 /**
- * This code is responsible for executing shell commands and filesystem operations.
+ * This code is responsible for shell quoting, command execution, and
+ * filesystem operations.
  */
 
 #include "all.h"
+
+int shell_quote(const char *input, char *out_quoted, size_t buffer_length)
+{
+    size_t out_pos = 0;
+    const char *p;
+
+    // Validate inputs.
+    if (!input || !out_quoted)
+    {
+        return -2;
+    }
+
+    // Start with opening single quote.
+    if (out_pos >= buffer_length - 1)
+    {
+        return -1;
+    }
+    out_quoted[out_pos++] = '\'';
+
+    // Process each character.
+    for (p = input; *p; p++)
+    {
+        if (*p == '\'')
+        {
+            // Escape single quote: end quote, escaped quote, start quote.
+            // Need 4 characters: '\''
+            if (out_pos + 4 >= buffer_length)
+            {
+                return -1;
+            }
+            out_quoted[out_pos++] = '\'';
+            out_quoted[out_pos++] = '\\';
+            out_quoted[out_pos++] = '\'';
+            out_quoted[out_pos++] = '\'';
+        }
+        else
+        {
+            // Copy character as-is (safe inside single quotes).
+            if (out_pos >= buffer_length - 2)
+            {
+                return -1;
+            }
+            out_quoted[out_pos++] = *p;
+        }
+    }
+
+    // Close with ending single quote.
+    if (out_pos >= buffer_length - 1)
+    {
+        return -1;
+    }
+    out_quoted[out_pos++] = '\'';
+    out_quoted[out_pos] = '\0';
+
+    return 0;
+}
+
+int shell_quote_path(const char *path, char *out_quoted, size_t buffer_length)
+{
+    // Validate path is non-empty.
+    if (!path || path[0] == '\0')
+    {
+        return -2;
+    }
+
+    return shell_quote(path, out_quoted, buffer_length);
+}
 
 int run_command(const char *command)
 {
@@ -11,8 +79,8 @@ int run_command(const char *command)
 
 int run_chroot(const char *rootfs_path, const char *command)
 {
-    char quoted_path[SHELL_QUOTED_MAX_LENGTH];
-    char full_command[MAX_COMMAND_LENGTH];
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
+    char full_command[COMMAND_MAX_LENGTH];
 
     // Quote the rootfs path to prevent command injection.
     if (shell_quote_path(rootfs_path, quoted_path, sizeof(quoted_path)) != 0)
@@ -32,8 +100,8 @@ int run_chroot(const char *rootfs_path, const char *command)
 
 int mkdir_p(const char *path)
 {
-    char command[MAX_COMMAND_LENGTH];
-    char quoted_path[SHELL_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
 
     // Quote the path to prevent command injection.
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
@@ -57,9 +125,9 @@ int mkdir_p(const char *path)
 
 int copy_file(const char *src, const char *dst)
 {
-    char command[MAX_COMMAND_LENGTH];
-    char quoted_src[SHELL_QUOTED_MAX_LENGTH];
-    char quoted_dst[SHELL_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
 
     // Quote paths to prevent command injection.
     if (shell_quote_path(src, quoted_src, sizeof(quoted_src)) != 0)
@@ -88,8 +156,8 @@ int copy_file(const char *src, const char *dst)
 
 int rm_rf(const char *path)
 {
-    char quoted_path[SHELL_QUOTED_MAX_LENGTH];
-    char command[MAX_COMMAND_LENGTH];
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
 
     // Quote the path to prevent command injection.
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
@@ -109,8 +177,8 @@ int rm_rf(const char *path)
 
 int rm_file(const char *path)
 {
-    char quoted_path[SHELL_QUOTED_MAX_LENGTH];
-    char command[MAX_COMMAND_LENGTH];
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
 
     // Quote the path to prevent command injection.
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
@@ -130,8 +198,8 @@ int rm_file(const char *path)
 
 int chmod_file(const char *mode, const char *path)
 {
-    char quoted_path[SHELL_QUOTED_MAX_LENGTH];
-    char command[MAX_COMMAND_LENGTH];
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
 
     // Quote the path to prevent command injection.
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
@@ -151,9 +219,9 @@ int chmod_file(const char *mode, const char *path)
 
 int symlink_file(const char *target, const char *link_path)
 {
-    char quoted_target[SHELL_QUOTED_MAX_LENGTH];
-    char quoted_link[SHELL_QUOTED_MAX_LENGTH];
-    char command[MAX_COMMAND_LENGTH];
+    char quoted_target[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_link[COMMAND_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
 
     // Quote the target and link paths.
     if (shell_quote(target, quoted_target, sizeof(quoted_target)) != 0)

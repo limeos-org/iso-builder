@@ -1,21 +1,26 @@
 #pragma once
 
+/** The maximum length for URL strings. */
+#define FETCH_URL_MAX_LENGTH 512
+
 /**
- * Initializes the collector module.
+ * Initializes the fetch module.
  *
- * Must be called before any other collector functions. Initializes libcurl globally.
+ * Must be called before any other fetch functions. Initializes libcurl
+ * globally.
  *
  * @return - `0` - Indicates successful initialization.
  * @return - `-1` - Indicates initialization failure.
  */
-int init_collector(void);
+int init_fetch(void);
 
 /**
- * Cleans up the collector module.
+ * Cleans up the fetch module.
  *
- * Should be called when the collector module is no longer needed. Cleans up libcurl.
+ * Should be called when the fetch module is no longer needed. Cleans up
+ * libcurl.
  */
-void cleanup_collector(void);
+void cleanup_fetch(void);
 
 /**
  * Fetches a component binary from local cache or GitHub releases.

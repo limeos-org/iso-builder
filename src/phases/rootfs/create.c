@@ -1,5 +1,5 @@
 /**
- * This code is responsible for creating and stripping the root filesystem.
+ * This code is responsible for creating a minimal Debian root filesystem.
  */
 
 #include "all.h"
@@ -40,8 +40,8 @@ static int find_first_glob(
 
 int create_rootfs(const char *path)
 {
-    char command[MAX_COMMAND_LENGTH];
-    char quoted_path[SHELL_QUOTED_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
 
     LOG_INFO("Creating rootfs at %s", path);
 
@@ -81,9 +81,9 @@ int create_rootfs(const char *path)
     }
 
     // Copy kernel to standard path for boot loaders.
-    char kernel_pattern[MAX_PATH_LENGTH];
-    char kernel_src[MAX_PATH_LENGTH];
-    char kernel_dst[MAX_PATH_LENGTH];
+    char kernel_pattern[COMMAND_PATH_MAX_LENGTH];
+    char kernel_src[COMMAND_PATH_MAX_LENGTH];
+    char kernel_dst[COMMAND_PATH_MAX_LENGTH];
 
     snprintf(kernel_pattern, sizeof(kernel_pattern), "%s/boot/vmlinuz-*", path);
     if (find_first_glob(kernel_pattern, kernel_src, sizeof(kernel_src)) != 0)
@@ -100,9 +100,9 @@ int create_rootfs(const char *path)
     }
 
     // Copy initrd to standard path for boot loaders.
-    char initrd_pattern[MAX_PATH_LENGTH];
-    char initrd_src[MAX_PATH_LENGTH];
-    char initrd_dst[MAX_PATH_LENGTH];
+    char initrd_pattern[COMMAND_PATH_MAX_LENGTH];
+    char initrd_src[COMMAND_PATH_MAX_LENGTH];
+    char initrd_dst[COMMAND_PATH_MAX_LENGTH];
 
     snprintf(initrd_pattern, sizeof(initrd_pattern), "%s/boot/initrd.img-*", path);
     if (find_first_glob(initrd_pattern, initrd_src, sizeof(initrd_src)) != 0)
@@ -119,90 +119,6 @@ int create_rootfs(const char *path)
     }
 
     LOG_INFO("Rootfs created successfully");
-
-    return 0;
-}
-
-int strip_rootfs(const char *path)
-{
-    char dir_path[MAX_PATH_LENGTH];
-
-    // Log the start of rootfs stripping.
-    LOG_INFO("Stripping rootfs at %s", path);
-
-    // Remove documentation files.
-    snprintf(dir_path, sizeof(dir_path), "%s/usr/share/doc", path);
-    if (rm_rf(dir_path) != 0)
-    {
-        LOG_ERROR("Failed to remove doc directory");
-        return -1;
-    }
-
-    snprintf(dir_path, sizeof(dir_path), "%s/usr/share/man", path);
-    if (rm_rf(dir_path) != 0)
-    {
-        LOG_ERROR("Failed to remove man directory");
-        return -1;
-    }
-
-    snprintf(dir_path, sizeof(dir_path), "%s/usr/share/info", path);
-    if (rm_rf(dir_path) != 0)
-    {
-        LOG_ERROR("Failed to remove info directory");
-        return -1;
-    }
-
-    // Remove non-English locales.
-    char command[MAX_COMMAND_LENGTH];
-    char quoted_locale_dir[SHELL_QUOTED_MAX_LENGTH];
-
-    snprintf(dir_path, sizeof(dir_path), "%s/usr/share/locale", path);
-    if (shell_quote_path(dir_path, quoted_locale_dir, sizeof(quoted_locale_dir)) != 0)
-    {
-        LOG_ERROR("Failed to quote locale directory");
-        return -2;
-    }
-
-    snprintf(
-        command, sizeof(command),
-        "find %s -mindepth 1 -maxdepth 1 ! -name 'en*' -exec rm -rf {} +",
-        quoted_locale_dir
-    );
-    if (run_command(command) != 0)
-    {
-        LOG_ERROR("Failed to remove non-English locales");
-        return -2;
-    }
-
-    // Remove apt cache.
-    snprintf(dir_path, sizeof(dir_path), "%s/var/cache/apt", path);
-    if (rm_rf(dir_path) != 0)
-    {
-        LOG_ERROR("Failed to remove apt cache");
-        return -3;
-    }
-
-    // Recreate apt cache directory.
-    if (mkdir_p(dir_path) != 0)
-    {
-        LOG_WARNING("Failed to recreate apt cache directory");
-    }
-
-    // Remove apt lists.
-    snprintf(dir_path, sizeof(dir_path), "%s/var/lib/apt/lists", path);
-    if (rm_rf(dir_path) != 0)
-    {
-        LOG_ERROR("Failed to remove apt lists");
-        return -4;
-    }
-
-    // Recreate apt lists directory.
-    if (mkdir_p(dir_path) != 0)
-    {
-        LOG_WARNING("Failed to recreate apt lists directory");
-    }
-
-    LOG_INFO("Rootfs stripped successfully");
 
     return 0;
 }

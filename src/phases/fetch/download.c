@@ -1,14 +1,14 @@
 /**
- * This code is responsible for collecting LimeOS component binaries from
- * local cache or GitHub releases using libcurl.
+ * This code is responsible for fetching LimeOS component binaries from local
+ * cache or GitHub releases.
  */
 
 #include "all.h"
 
 static int copy_local(const char *name, const char *output_directory)
 {
-    char local_path[MAX_PATH_LENGTH];
-    char output_path[MAX_PATH_LENGTH];
+    char local_path[COMMAND_PATH_MAX_LENGTH];
+    char output_path[COMMAND_PATH_MAX_LENGTH];
 
     // Construct the local binary path with limeos- prefix.
     snprintf(local_path, sizeof(local_path), "./bin/limeos-%s", name);
@@ -36,24 +36,6 @@ static int copy_local(const char *name, const char *output_directory)
     return 0;
 }
 
-int init_collector(void)
-{
-    // Initialize the curl library globally.
-    CURLcode result = curl_global_init(CURL_GLOBAL_DEFAULT);
-    if (result != CURLE_OK)
-    {
-        return -1;
-    }
-
-    return 0;
-}
-
-void cleanup_collector(void)
-{
-    // Clean up the curl library globally.
-    curl_global_cleanup();
-}
-
 static size_t handle_write_data(
     void *data, size_t size, size_t count, void *stream
 )
@@ -70,9 +52,9 @@ static int download_remote(
     CURL *curl;
     CURLcode result;
     FILE *output_file;
-    char url[MAX_URL_LENGTH];
-    char output_path[MAX_PATH_LENGTH];
-    char resolved_version[CONFIG_VERSION_MAX_LENGTH];
+    char url[FETCH_URL_MAX_LENGTH];
+    char output_path[COMMAND_PATH_MAX_LENGTH];
+    char resolved_version[VERSION_MAX_LENGTH];
 
     // Resolve the version to the latest within the major version.
     int resolve_result = resolve_version(
@@ -166,6 +148,24 @@ static int download_remote(
     return 0;
 }
 
+int init_fetch(void)
+{
+    // Initialize the curl library globally.
+    CURLcode result = curl_global_init(CURL_GLOBAL_DEFAULT);
+    if (result != CURLE_OK)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+void cleanup_fetch(void)
+{
+    // Clean up the curl library globally.
+    curl_global_cleanup();
+}
+
 int fetch_component(
     const char *name,
     const char *version,
@@ -187,21 +187,21 @@ int fetch_all_components(const char *version, const char *output_directory)
     LOG_INFO("Fetching LimeOS components...");
 
     // Fetch required components.
-    for (int i = 0; i < REQUIRED_COMPONENTS_COUNT; i++)
+    for (int i = 0; i < CONFIG_REQUIRED_COMPONENTS_COUNT; i++)
     {
-        if (fetch_component(REQUIRED_COMPONENTS[i], version, output_directory) != 0)
+        if (fetch_component(CONFIG_REQUIRED_COMPONENTS[i], version, output_directory) != 0)
         {
-            LOG_ERROR("Required component failed: %s", REQUIRED_COMPONENTS[i]);
+            LOG_ERROR("Required component failed: %s", CONFIG_REQUIRED_COMPONENTS[i]);
             return -1;
         }
     }
 
     // Fetch optional components.
-    for (int i = 0; i < OPTIONAL_COMPONENTS_COUNT; i++)
+    for (int i = 0; i < CONFIG_OPTIONAL_COMPONENTS_COUNT; i++)
     {
-        if (fetch_component(OPTIONAL_COMPONENTS[i], version, output_directory) != 0)
+        if (fetch_component(CONFIG_OPTIONAL_COMPONENTS[i], version, output_directory) != 0)
         {
-            LOG_WARNING("Optional component skipped: %s", OPTIONAL_COMPONENTS[i]);
+            LOG_WARNING("Optional component skipped: %s", CONFIG_OPTIONAL_COMPONENTS[i]);
         }
     }
 

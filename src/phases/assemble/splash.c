@@ -1,6 +1,5 @@
 /**
- * This code is responsible for configuring boot loaders and splash screen
- * for the LimeOS installer ISO.
+ * This code is responsible for configuring the Plymouth splash screen.
  */
 
 #include "all.h"
@@ -39,115 +38,12 @@ static int find_first_glob(
     return 0;
 }
 
-int setup_grub(const char *rootfs_path)
-{
-    char grub_dir[MAX_PATH_LENGTH];
-    char grub_cfg_path[MAX_PATH_LENGTH];
-
-    LOG_INFO("Configuring GRUB for UEFI boot");
-
-    // Construct the GRUB directory path.
-    snprintf(grub_dir, sizeof(grub_dir), "%s/boot/grub", rootfs_path);
-
-    // Create the GRUB directory.
-    if (mkdir_p(grub_dir) != 0)
-    {
-        LOG_ERROR("Failed to create GRUB directory: %s", grub_dir);
-        return -1;
-    }
-
-    // Construct the grub.cfg path.
-    snprintf(grub_cfg_path, sizeof(grub_cfg_path), "%s/grub.cfg", grub_dir);
-
-    // Define the GRUB configuration content.
-    const char *grub_cfg =
-        "set timeout=0\n"
-        "set default=0\n"
-        "\n"
-        "menuentry \"LimeOS Installer\" {\n"
-        "    linux " CONFIG_BOOT_KERNEL_PATH " " CONFIG_BOOT_KERNEL_PARAMS "\n"
-        "    initrd " CONFIG_BOOT_INITRD_PATH "\n"
-        "}\n";
-
-    // Write the GRUB configuration file.
-    if (write_file(grub_cfg_path, grub_cfg) != 0)
-    {
-        return -2;
-    }
-
-    LOG_INFO("GRUB configured successfully");
-
-    return 0;
-}
-
-int setup_isolinux(const char *rootfs_path)
-{
-    char isolinux_dir[MAX_PATH_LENGTH];
-    char isolinux_cfg_path[MAX_PATH_LENGTH];
-    char dst_path[MAX_PATH_LENGTH];
-
-    LOG_INFO("Configuring isolinux for BIOS boot");
-
-    // Construct the isolinux directory path.
-    snprintf(isolinux_dir, sizeof(isolinux_dir), "%s/isolinux", rootfs_path);
-
-    // Create the isolinux directory.
-    if (mkdir_p(isolinux_dir) != 0)
-    {
-        LOG_ERROR("Failed to create isolinux directory: %s", isolinux_dir);
-        return -1;
-    }
-
-    // Copy isolinux.bin from the system.
-    snprintf(dst_path, sizeof(dst_path), "%s/isolinux.bin", isolinux_dir);
-    if (copy_file(CONFIG_ISOLINUX_BIN_PATH, dst_path) != 0)
-    {
-        LOG_ERROR("Failed to copy isolinux.bin");
-        return -2;
-    }
-
-    // Copy ldlinux.c32 from the system.
-    snprintf(dst_path, sizeof(dst_path), "%s/ldlinux.c32", isolinux_dir);
-    if (copy_file(CONFIG_LDLINUX_PATH, dst_path) != 0)
-    {
-        LOG_ERROR("Failed to copy ldlinux.c32");
-        return -3;
-    }
-
-    // Construct the isolinux.cfg path.
-    snprintf(
-        isolinux_cfg_path, sizeof(isolinux_cfg_path),
-        "%s/isolinux.cfg", isolinux_dir
-    );
-
-    // Define the isolinux configuration content.
-    const char *isolinux_cfg =
-        "DEFAULT limeos\n"
-        "TIMEOUT 0\n"
-        "PROMPT 0\n"
-        "\n"
-        "LABEL limeos\n"
-        "    MENU LABEL LimeOS Installer\n"
-        "    KERNEL " CONFIG_BOOT_KERNEL_PATH "\n"
-        "    APPEND initrd=" CONFIG_BOOT_INITRD_PATH " " CONFIG_BOOT_KERNEL_PARAMS "\n";
-
-    // Write the isolinux configuration file.
-    if (write_file(isolinux_cfg_path, isolinux_cfg) != 0)
-    {
-        return -4;
-    }
-
-    LOG_INFO("isolinux configured successfully");
-
-    return 0;
-}
-
 int setup_splash(const char *rootfs_path, const char *logo_path)
 {
-    char theme_dir[MAX_PATH_LENGTH];
-    char theme_file_path[MAX_PATH_LENGTH];
-    char splash_dest[MAX_PATH_LENGTH];
-    char theme_cmd[MAX_PATH_LENGTH];
+    char theme_dir[COMMAND_PATH_MAX_LENGTH];
+    char theme_file_path[COMMAND_PATH_MAX_LENGTH];
+    char splash_dest[COMMAND_PATH_MAX_LENGTH];
+    char theme_cmd[COMMAND_PATH_MAX_LENGTH];
 
     LOG_INFO("Configuring Plymouth splash screen");
 
@@ -202,7 +98,7 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     }
 
     // Construct the script file path.
-    char script_path[MAX_PATH_LENGTH];
+    char script_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(script_path, sizeof(script_path), "%s/" CONFIG_PLYMOUTH_THEME_NAME ".script", theme_dir);
 
     // Define the Plymouth script.
@@ -235,9 +131,9 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     }
 
     // Re-copy the updated initrd using safe glob.
-    char initrd_pattern[MAX_PATH_LENGTH];
-    char initrd_src[MAX_PATH_LENGTH];
-    char initrd_dst[MAX_PATH_LENGTH];
+    char initrd_pattern[COMMAND_PATH_MAX_LENGTH];
+    char initrd_src[COMMAND_PATH_MAX_LENGTH];
+    char initrd_dst[COMMAND_PATH_MAX_LENGTH];
 
     snprintf(initrd_pattern, sizeof(initrd_pattern), "%s/boot/initrd.img-*", rootfs_path);
     if (find_first_glob(initrd_pattern, initrd_src, sizeof(initrd_src)) == 0)

@@ -1,38 +1,27 @@
 #pragma once
 
-/**
- * This file consolidates all project-wide configuration constants.
- *
- * Constants are organized by category for easy navigation.
- */
+// ---
+// Build Configuration
+// ---
 
-/* ============================================================================
- * Buffer Size Limits
- * ============================================================================ */
+/** The base directory for all build files. */
+#define CONFIG_BUILD_DIRECTORY "./build"
 
-/** The maximum length for constructed shell command strings. */
-#define CONFIG_MAX_COMMAND_LENGTH 512
+/** The directory where component binaries are downloaded. */
+#define CONFIG_COMPONENTS_DIRECTORY CONFIG_BUILD_DIRECTORY "/components"
 
-/** The maximum length for file path strings. */
-#define CONFIG_MAX_PATH_LENGTH 256
+/** The directory where the root filesystem is created. */
+#define CONFIG_ROOTFS_DIRECTORY CONFIG_BUILD_DIRECTORY "/rootfs"
 
-/** The maximum length for URL strings. */
-#define CONFIG_MAX_URL_LENGTH 512
+/** The path to the splash logo image. */
+#define CONFIG_SPLASH_LOGO_PATH "./assets/splash.png"
 
-/** The maximum length for version strings. */
-#define CONFIG_VERSION_MAX_LENGTH 32
+/** The path where the final ISO will be created. */
+#define CONFIG_OUTPUT_ISO_PATH CONFIG_BUILD_DIRECTORY "/limeos.iso"
 
-/**
- * The initial buffer size for API response data.
- *
- * 8KB is sufficient for typical GitHub releases API responses containing
- * 10-20 releases. The buffer grows dynamically if needed.
- */
-#define CONFIG_API_BUFFER_SIZE 8192
-
-/* ============================================================================
- * GitHub Configuration
- * ============================================================================ */
+// ---
+// Github Configuration
+// ---
 
 /** The GitHub organization hosting LimeOS component repositories. */
 #define CONFIG_GITHUB_ORG "limeos-org"
@@ -43,9 +32,9 @@
 /** The GitHub API base URL for releases. */
 #define CONFIG_GITHUB_API_BASE "https://api.github.com/repos"
 
-/* ============================================================================
- * Boot Configuration
- * ============================================================================ */
+// ---
+// Boot Configuration
+// ---
 
 /** The kernel command line parameters for boot. */
 #define CONFIG_BOOT_KERNEL_PARAMS "boot=live quiet splash loglevel=0"
@@ -64,9 +53,9 @@
  */
 #define CONFIG_EFI_IMAGE_SIZE_MB 4
 
-/* ============================================================================
- * System Paths (Host Dependencies)
- * ============================================================================ */
+// ---
+// System Paths (Host Dependencies)
+// ---
 
 /** The path to isolinux.bin on the host system. */
 #define CONFIG_ISOLINUX_BIN_PATH "/usr/lib/ISOLINUX/isolinux.bin"
@@ -80,9 +69,9 @@
 /** The path to the GRUB EFI binary on the host system. */
 #define CONFIG_GRUB_EFI_PATH "/usr/lib/grub/x86_64-efi/monolithic/grubx64.efi"
 
-/* ============================================================================
- * Plymouth/Splash Configuration
- * ============================================================================ */
+// ---
+// Plymouth Configuration
+// ---
 
 /** The Plymouth theme name. */
 #define CONFIG_PLYMOUTH_THEME_NAME "limeos"
@@ -90,9 +79,9 @@
 /** The Plymouth themes directory path (relative to rootfs). */
 #define CONFIG_PLYMOUTH_THEMES_DIR "/usr/share/plymouth/themes"
 
-/* ============================================================================
- * Rootfs Configuration
- * ============================================================================ */
+// ---
+// Root Filesystem Configuration
+// ---
 
 /** The Debian release to use for the base rootfs. */
 #define CONFIG_DEBIAN_RELEASE "bookworm"
@@ -100,12 +89,35 @@
 /** The installation path for component binaries (relative to rootfs). */
 #define CONFIG_INSTALL_BIN_PATH "/usr/local/bin"
 
-/* ============================================================================
- * Service Configuration
- * ============================================================================ */
+// ---
+// Service Configuration
+// ---
 
 /** The systemd service name for the installer. */
 #define CONFIG_INSTALLER_SERVICE_NAME "limeos-installer"
 
 /** The installer binary name. */
 #define CONFIG_INSTALLER_BINARY_NAME "installation-wizard"
+
+// ---
+// Component Configuration
+// ---
+
+/** The list of required LimeOS component binaries. */
+static const char *CONFIG_REQUIRED_COMPONENTS[] = {
+    CONFIG_INSTALLER_BINARY_NAME
+};
+
+/** The number of required components. */
+#define CONFIG_REQUIRED_COMPONENTS_COUNT \
+    (int)(sizeof(CONFIG_REQUIRED_COMPONENTS) / sizeof(CONFIG_REQUIRED_COMPONENTS[0]))
+
+/** The list of optional LimeOS component binaries. */
+static const char *CONFIG_OPTIONAL_COMPONENTS[] = {
+    "window-manager",
+    "display-manager"
+};
+
+/** The number of optional components. */
+#define CONFIG_OPTIONAL_COMPONENTS_COUNT \
+    (int)(sizeof(CONFIG_OPTIONAL_COMPONENTS) / sizeof(CONFIG_OPTIONAL_COMPONENTS[0]))

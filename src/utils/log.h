@@ -1,5 +1,4 @@
 #pragma once
-#include "../all.h"
 
 /**
  * Logs a formatted message with the INFO severity level, including source 

@@ -5,21 +5,6 @@
 
 #include "all.h"
 
-/** The base directory for all build files. */
-#define BUILD_DIRECTORY "./build"
-
-/** The directory where component binaries are downloaded. */
-#define COMPONENTS_DIRECTORY BUILD_DIRECTORY "/components"
-
-/** The directory where the root filesystem is created. */
-#define ROOTFS_DIRECTORY BUILD_DIRECTORY "/rootfs"
-
-/** The path to the splash logo image. */
-#define SPLASH_LOGO_PATH "./assets/splash.png"
-
-/** The path where the final ISO will be created. */
-#define OUTPUT_ISO_PATH BUILD_DIRECTORY "/limeos.iso"
-
 static void print_usage(const char *program_name)
 {
     printf("Usage: %s <version> [options]\n", program_name);
@@ -81,12 +66,12 @@ int main(int argc, char *argv[])
 
     // Clean up old build files.
     LOG_INFO("Cleaning old build files...");
-    rm_rf(BUILD_DIRECTORY);
+    rm_rf(CONFIG_BUILD_DIRECTORY);
 
-    // Initialize the collector module.
-    if (init_collector() != 0)
+    // Initialize the fetch module.
+    if (init_fetch() != 0)
     {
-        LOG_ERROR("Failed to initialize collector module");
+        LOG_ERROR("Failed to initialize fetch module");
         return 1;
     }
 
@@ -94,41 +79,41 @@ int main(int argc, char *argv[])
     LOG_INFO("Building ISO for version %s", version);
 
     // Fetch all required components.
-    if (fetch_all_components(version, COMPONENTS_DIRECTORY) != 0)
+    if (fetch_all_components(version, CONFIG_COMPONENTS_DIRECTORY) != 0)
     {
         LOG_ERROR("Failed to fetch components");
-        cleanup_collector();
+        cleanup_fetch();
         return 1;
     }
 
     LOG_INFO("Phase 1 complete: Components fetched");
 
-    // Clean up the collector module.
-    cleanup_collector();
+    // Clean up the fetch module.
+    cleanup_fetch();
 
     // Create the root filesystem.
-    if (create_rootfs(ROOTFS_DIRECTORY) != 0)
+    if (create_rootfs(CONFIG_ROOTFS_DIRECTORY) != 0)
     {
         LOG_ERROR("Failed to create rootfs");
         return 1;
     }
 
     // Strip unnecessary files from the rootfs.
-    if (strip_rootfs(ROOTFS_DIRECTORY) != 0)
+    if (strip_rootfs(CONFIG_ROOTFS_DIRECTORY) != 0)
     {
         LOG_ERROR("Failed to strip rootfs");
         return 1;
     }
 
     // Install component binaries into the rootfs.
-    if (install_components(ROOTFS_DIRECTORY, COMPONENTS_DIRECTORY) != 0)
+    if (install_components(CONFIG_ROOTFS_DIRECTORY, CONFIG_COMPONENTS_DIRECTORY) != 0)
     {
         LOG_ERROR("Failed to install components");
         return 1;
     }
 
     // Configure the init system.
-    if (configure_init(ROOTFS_DIRECTORY) != 0)
+    if (configure_init(CONFIG_ROOTFS_DIRECTORY) != 0)
     {
         LOG_ERROR("Failed to configure init");
         return 1;
@@ -137,21 +122,21 @@ int main(int argc, char *argv[])
     LOG_INFO("Phase 2 complete: Rootfs created");
 
     // Configure GRUB for UEFI boot.
-    if (setup_grub(ROOTFS_DIRECTORY) != 0)
+    if (setup_grub(CONFIG_ROOTFS_DIRECTORY) != 0)
     {
         LOG_ERROR("Failed to configure GRUB");
         return 1;
     }
 
     // Configure isolinux for BIOS boot.
-    if (setup_isolinux(ROOTFS_DIRECTORY) != 0)
+    if (setup_isolinux(CONFIG_ROOTFS_DIRECTORY) != 0)
     {
         LOG_ERROR("Failed to configure isolinux");
         return 1;
     }
 
     // Configure Plymouth splash screen.
-    if (setup_splash(ROOTFS_DIRECTORY, SPLASH_LOGO_PATH) != 0)
+    if (setup_splash(CONFIG_ROOTFS_DIRECTORY, CONFIG_SPLASH_LOGO_PATH) != 0)
     {
         LOG_ERROR("Failed to configure splash screen");
         return 1;
@@ -160,14 +145,14 @@ int main(int argc, char *argv[])
     LOG_INFO("Phase 3 complete: Boot configured");
 
     // Create the final ISO image.
-    if (create_iso(ROOTFS_DIRECTORY, OUTPUT_ISO_PATH) != 0)
+    if (create_iso(CONFIG_ROOTFS_DIRECTORY, CONFIG_OUTPUT_ISO_PATH) != 0)
     {
         LOG_ERROR("Failed to create ISO image");
         return 1;
     }
 
     LOG_INFO("Phase 4 complete: ISO assembled");
-    LOG_INFO("Build complete! ISO available at: %s", OUTPUT_ISO_PATH);
+    LOG_INFO("Build complete! ISO available at: %s", CONFIG_OUTPUT_ISO_PATH);
 
     return 0;
 }

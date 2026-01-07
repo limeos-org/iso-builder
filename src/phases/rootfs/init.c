@@ -6,7 +6,7 @@
 
 static int write_installer_service(const char *rootfs_path)
 {
-    char path[MAX_PATH_LENGTH];
+    char path[COMMAND_PATH_MAX_LENGTH];
 
     // Create the systemd service directory.
     snprintf(path, sizeof(path), "%s/etc/systemd/system", rootfs_path);
@@ -48,8 +48,8 @@ static int write_installer_service(const char *rootfs_path)
 
 static int enable_installer_service(const char *rootfs_path)
 {
-    char wants_dir[MAX_PATH_LENGTH];
-    char link_path[MAX_PATH_LENGTH];
+    char wants_dir[COMMAND_PATH_MAX_LENGTH];
+    char link_path[COMMAND_PATH_MAX_LENGTH];
 
     // Create the target wants directory.
     snprintf(wants_dir, sizeof(wants_dir), "%s/etc/systemd/system/multi-user.target.wants", rootfs_path);
@@ -71,7 +71,7 @@ static int enable_installer_service(const char *rootfs_path)
 
 static int set_default_target(const char *rootfs_path)
 {
-    char link_path[MAX_PATH_LENGTH];
+    char link_path[COMMAND_PATH_MAX_LENGTH];
 
     // Set multi-user target as default.
     snprintf(link_path, sizeof(link_path), "%s/etc/systemd/system/default.target", rootfs_path);
@@ -86,7 +86,7 @@ static int set_default_target(const char *rootfs_path)
 
 static int disable_getty(const char *rootfs_path)
 {
-    char getty_path[MAX_PATH_LENGTH];
+    char getty_path[COMMAND_PATH_MAX_LENGTH];
 
     // Remove getty on tty1 to prevent conflict with installer.
     snprintf(

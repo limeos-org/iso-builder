@@ -1,6 +1,5 @@
 #pragma once
-
-#include <stddef.h>
+#include "../all.h"
 
 /** The maximum length for version strings (e.g., "v1.2.345"). */
 #define VERSION_MAX_LENGTH 32
@@ -22,7 +21,8 @@ int validate_version(const char *version);
  *
  * @param version The version string (e.g., "1.2.3" or "v1.2.3").
  *
- * @return The major version number, or -1 if parsing fails.
+ * @return - The major version number on success.
+ * @return - `-1` - Indicates parsing failure.
  */
 int extract_major_version(const char *version);
 
@@ -43,7 +43,6 @@ int compare_versions(const char *v1, const char *v2);
  *
  * @param version The version string to process.
  *
- * @return Pointer to the first character after the prefix, or the original
- *         pointer if no prefix exists.
+ * @return A pointer to the version string after any 'v' or 'V' prefix.
  */
 const char *skip_version_prefix(const char *version);

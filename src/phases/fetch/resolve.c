@@ -1,10 +1,17 @@
 /**
- * This code is responsible for resolving GitHub release versions by querying
- * the GitHub API and finding the latest release within a major version.
+ * This code is responsible for resolving component versions via the GitHub API.
  */
 
 #include "all.h"
 #include <json-c/json.h>
+
+/**
+ * The initial buffer size for API response data.
+ *
+ * 8KB is sufficient for typical GitHub releases API responses containing
+ * 10-20 releases. The buffer grows dynamically if needed.
+ */
+#define API_BUFFER_SIZE 8192
 
 /** A type representing a dynamically growing buffer for HTTP response data. */
 typedef struct
@@ -52,7 +59,7 @@ static int fetch_releases_json(
 {
     CURL *curl;
     CURLcode result;
-    char url[MAX_URL_LENGTH];
+    char url[FETCH_URL_MAX_LENGTH];
     struct curl_slist *headers = NULL;
     ResponseBuffer buffer = {0};
 
@@ -64,14 +71,14 @@ static int fetch_releases_json(
     );
 
     // Allocate the initial response buffer.
-    buffer.data = malloc(CONFIG_API_BUFFER_SIZE);
+    buffer.data = malloc(API_BUFFER_SIZE);
     if (!buffer.data)
     {
         return -1;
     }
     buffer.data[0] = '\0';
     buffer.size = 0;
-    buffer.capacity = CONFIG_API_BUFFER_SIZE;
+    buffer.capacity = API_BUFFER_SIZE;
 
     // Initialize the curl session.
     curl = curl_easy_init();

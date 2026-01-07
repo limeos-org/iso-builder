@@ -14,42 +14,16 @@
 
 #include "config.h"
 
-/** Backward-compatible alias for CONFIG_MAX_COMMAND_LENGTH. */
-#define MAX_COMMAND_LENGTH CONFIG_MAX_COMMAND_LENGTH
-
-/** Backward-compatible alias for CONFIG_MAX_PATH_LENGTH. */
-#define MAX_PATH_LENGTH CONFIG_MAX_PATH_LENGTH
-
-/** Backward-compatible alias for CONFIG_MAX_URL_LENGTH. */
-#define MAX_URL_LENGTH CONFIG_MAX_URL_LENGTH
-
-/** The list of required LimeOS component binaries. */
-static const char *REQUIRED_COMPONENTS[] = {
-    CONFIG_INSTALLER_BINARY_NAME
-};
-
-/** The number of required components. */
-#define REQUIRED_COMPONENTS_COUNT \
-    (int)(sizeof(REQUIRED_COMPONENTS) / sizeof(REQUIRED_COMPONENTS[0]))
-
-/** The list of optional LimeOS component binaries. */
-static const char *OPTIONAL_COMPONENTS[] = {
-    "window-manager",
-    "display-manager"
-};
-
-/** The number of optional components. */
-#define OPTIONAL_COMPONENTS_COUNT \
-    (int)(sizeof(OPTIONAL_COMPONENTS) / sizeof(OPTIONAL_COMPONENTS[0]))
-
-#include "boot.h"
-#include "collector.h"
-#include "iso.h"
-#include "version.h"
-#include "rootfs/components.h"
-#include "rootfs/create.h"
-#include "rootfs/init.h"
-#include "utils/shell.h"
+#include "phases/fetch/resolve.h"
+#include "phases/fetch/download.h"
+#include "phases/rootfs/create.h"
+#include "phases/rootfs/strip.h"
+#include "phases/rootfs/install.h"
+#include "phases/rootfs/init.h"
+#include "phases/assemble/grub.h"
+#include "phases/assemble/isolinux.h"
+#include "phases/assemble/splash.h"
+#include "phases/assemble/iso.h"
 #include "utils/command.h"
 #include "utils/log.h"
 #include "utils/version.h"
