@@ -282,10 +282,23 @@ static int run_xorriso(const char *staging_path, const char *output_path)
 
 static void cleanup_staging(const char *staging_path)
 {
-    if (rm_rf(staging_path) != 0)
+    // Retry cleanup up to 3 times with a short delay between attempts.
+    for (int attempt = 1; attempt <= 3; attempt++)
     {
-        LOG_WARNING("Failed to clean up staging directory: %s", staging_path);
+        if (rm_rf(staging_path) == 0)
+        {
+            return;
+        }
+
+        // Wait briefly before retrying (files may be temporarily locked).
+        if (attempt < 3)
+        {
+            LOG_WARNING("Cleanup attempt %d failed, retrying...", attempt);
+            sleep(1);
+        }
     }
+
+    LOG_WARNING("Failed to clean up staging directory after 3 attempts: %s", staging_path);
 }
 
 int create_iso(const char *rootfs_path, const char *output_path)
