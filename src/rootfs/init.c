@@ -27,15 +27,22 @@ static int write_installer_service(const char *rootfs_path)
     fprintf(file,
         "[Unit]\n"
         "Description=LimeOS Installation Wizard\n"
-        "After=display-manager.service\n"
+        "After=systemd-user-sessions.service\n"
+        "After=plymouth-quit-wait.service\n"
         "\n"
         "[Service]\n"
         "Type=simple\n"
         "ExecStart=/usr/local/bin/installation-wizard\n"
+        "StandardInput=tty\n"
+        "StandardOutput=tty\n"
+        "TTYPath=/dev/tty1\n"
+        "TTYReset=yes\n"
+        "TTYVHangup=yes\n"
         "Restart=on-failure\n"
+        "RestartSec=1\n"
         "\n"
         "[Install]\n"
-        "WantedBy=graphical.target\n"
+        "WantedBy=multi-user.target\n"
     );
     fclose(file);
 
@@ -48,7 +55,7 @@ static int enable_installer_service(const char *rootfs_path)
     char path[MAX_PATH_LENGTH];
 
     // Create the target wants directory.
-    snprintf(path, sizeof(path), "%s/etc/systemd/system/graphical.target.wants", rootfs_path);
+    snprintf(path, sizeof(path), "%s/etc/systemd/system/multi-user.target.wants", rootfs_path);
     if (mkdir_p(path) != 0)
     {
         return -1;
@@ -57,7 +64,7 @@ static int enable_installer_service(const char *rootfs_path)
     // Create symlink to enable the service.
     snprintf(
         command, sizeof(command),
-        "ln -sf ../limeos-installer.service %s/etc/systemd/system/graphical.target.wants/limeos-installer.service",
+        "ln -sf ../limeos-installer.service %s/etc/systemd/system/multi-user.target.wants/limeos-installer.service",
         rootfs_path
     );
     if (run_command(command) != 0)
@@ -73,10 +80,10 @@ static int set_default_target(const char *rootfs_path)
 {
     char command[MAX_COMMAND_LENGTH];
 
-    // Set graphical target as default.
+    // Set multi-user target as default.
     snprintf(
         command, sizeof(command),
-        "ln -sf /lib/systemd/system/graphical.target %s/etc/systemd/system/default.target",
+        "ln -sf /lib/systemd/system/multi-user.target %s/etc/systemd/system/default.target",
         rootfs_path
     );
     if (run_command(command) != 0)
@@ -92,8 +99,12 @@ static int disable_getty(const char *rootfs_path)
 {
     char command[MAX_COMMAND_LENGTH];
 
-    // Remove getty services to prevent login prompts.
-    snprintf(command, sizeof(command), "rm -f %s/etc/systemd/system/getty.target.wants/*", rootfs_path);
+    // Remove getty on tty1 to prevent conflict with installer.
+    snprintf(
+        command, sizeof(command),
+        "rm -f %s/etc/systemd/system/getty.target.wants/getty@tty1.service",
+        rootfs_path
+    );
     if (run_command(command) != 0)
     {
         LOG_ERROR("Command failed: %s", command);

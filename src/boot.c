@@ -6,7 +6,7 @@
 #include "all.h"
 
 /** The kernel command line parameters for boot. */
-#define BOOT_KERNEL_PARAMS "quiet splash"
+#define BOOT_KERNEL_PARAMS "boot=live quiet splash loglevel=0"
 
 /** The default kernel image path within the ISO. */
 #define BOOT_KERNEL_PATH "/boot/vmlinuz"
@@ -212,18 +212,12 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
 
     // Define the Plymouth script.
     const char *script_cfg =
+        "Window.SetBackgroundTopColor(0, 0, 0);\n"
+        "Window.SetBackgroundBottomColor(0, 0, 0);\n"
         "splash_image = Image(\"splash.png\");\n"
-        "screen_width = Window.GetWidth();\n"
-        "screen_height = Window.GetHeight();\n"
-        "image_width = splash_image.GetWidth();\n"
-        "image_height = splash_image.GetHeight();\n"
-        "scale_x = screen_width / image_width;\n"
-        "scale_y = screen_height / image_height;\n"
-        "scale = Math.Min(scale_x, scale_y);\n"
-        "scaled_image = splash_image.Scale(image_width * scale, image_height * scale);\n"
-        "sprite = Sprite(scaled_image);\n"
-        "sprite.SetX(screen_width / 2 - scaled_image.GetWidth() / 2);\n"
-        "sprite.SetY(screen_height / 2 - scaled_image.GetHeight() / 2);\n";
+        "sprite = Sprite(splash_image);\n"
+        "sprite.SetX(Window.GetWidth() / 2 - splash_image.GetWidth() / 2);\n"
+        "sprite.SetY(Window.GetHeight() / 2 - splash_image.GetHeight() / 2);\n";
 
     // Write the Plymouth script file.
     if (write_file(script_path, script_cfg) != 0)
@@ -241,6 +235,26 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     {
         LOG_WARNING("Failed to set Plymouth theme (plymouth may not be installed)");
     }
+
+    // Regenerate initramfs to include the new Plymouth theme.
+    LOG_INFO("Regenerating initramfs with new theme...");
+    snprintf(
+        command, sizeof(command),
+        "chroot %s update-initramfs -u",
+        rootfs_path
+    );
+    if (run_command(command) != 0)
+    {
+        LOG_WARNING("Failed to regenerate initramfs");
+    }
+
+    // Re-copy the updated initrd.
+    snprintf(
+        command, sizeof(command),
+        "cp $(ls %s/boot/initrd.img-* | head -1) %s/boot/initrd.img",
+        rootfs_path, rootfs_path
+    );
+    run_command(command);
 
     LOG_INFO("Plymouth splash configured successfully");
 

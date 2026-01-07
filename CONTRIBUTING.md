@@ -92,18 +92,33 @@ This subsection explains how to run the ISO builder after building it.
 
 First, ensure the required commands are available on your system: `debootstrap`,
 `mkdir`, `cp`, `rm`, `ln`, `find`, and `chmod`. These are typically
-pre-installed on most Linux distributions, except for `debootstrap` which may
-need to be installed separately. Additionally, `isolinux` and `syslinux-common`
-are required for boot loader configuration:
+pre-installed on most Linux distributions. Install the following packages for
+rootfs creation, boot loader configuration, and ISO assembly:
 
 ```bash
-sudo apt install debootstrap isolinux syslinux-common
+sudo apt install \
+   debootstrap \
+   isolinux \
+   syslinux-common \
+   xorriso \
+   grub-efi-amd64-bin \
+   mtools \
+   dosfstools \
+   squashfs-tools
 ```
 
 To verify all runtime dependencies are installed, run:
 
 ```bash
-dpkg -s debootstrap isolinux syslinux-common >/dev/null 2>&1 && echo "OK"
+dpkg -s \
+   debootstrap \
+   isolinux \
+   syslinux-common \
+   xorriso \
+   grub-efi-amd64-bin \
+   mtools \
+   dosfstools \
+   squashfs-tools >/dev/null 2>&1 && echo "OK"
 ```
 
 The output should be "OK" if all is installed, nothing if any are missing.

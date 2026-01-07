@@ -17,6 +17,9 @@
 /** The path to the splash logo image. */
 #define SPLASH_LOGO_PATH "./assets/splash.png"
 
+/** The path where the final ISO will be created. */
+#define OUTPUT_ISO_PATH BUILD_DIRECTORY "/limeos.iso"
+
 static void print_usage(const char *program_name)
 {
     printf("Usage: %s <version> [options]\n", program_name);
@@ -155,6 +158,16 @@ int main(int argc, char *argv[])
     }
 
     LOG_INFO("Phase 3 complete: Boot configured");
+
+    // Create the final ISO image.
+    if (create_iso(ROOTFS_DIRECTORY, OUTPUT_ISO_PATH) != 0)
+    {
+        LOG_ERROR("Failed to create ISO image");
+        return 1;
+    }
+
+    LOG_INFO("Phase 4 complete: ISO assembled");
+    LOG_INFO("Build complete! ISO available at: %s", OUTPUT_ISO_PATH);
 
     return 0;
 }

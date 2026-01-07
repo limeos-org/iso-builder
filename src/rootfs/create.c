@@ -37,16 +37,40 @@ int create_rootfs(const char *path)
         return -1;
     }
 
-    // Install linux-image-amd64 and plymouth.
+    // Install all packages needed by the installation environment.
     snprintf(
         command, sizeof(command),
         "chroot %s apt-get install -y --no-install-recommends "
-        "linux-image-amd64 plymouth",
+        "linux-image-amd64 systemd-sysv plymouth plymouth-themes live-boot libncurses6 parted",
         path
     );
     if (run_command(command) != 0)
     {
         LOG_ERROR("Failed to install required packages");
+        return -1;
+    }
+
+    // Copy kernel to standard path for boot loaders.
+    snprintf(
+        command, sizeof(command),
+        "cp $(ls %s/boot/vmlinuz-* | head -1) %s/boot/vmlinuz",
+        path, path
+    );
+    if (run_command(command) != 0)
+    {
+        LOG_ERROR("Failed to copy kernel");
+        return -1;
+    }
+
+    // Copy initrd to standard path for boot loaders.
+    snprintf(
+        command, sizeof(command),
+        "cp $(ls %s/boot/initrd.img-* | head -1) %s/boot/initrd.img",
+        path, path
+    );
+    if (run_command(command) != 0)
+    {
+        LOG_ERROR("Failed to copy initrd");
         return -1;
     }
 

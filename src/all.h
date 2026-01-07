@@ -42,6 +42,7 @@ static const char *OPTIONAL_COMPONENTS[] = {
 
 #include "boot.h"
 #include "collector.h"
+#include "iso.h"
 #include "version.h"
 #include "rootfs/components.h"
 #include "rootfs/create.h"
