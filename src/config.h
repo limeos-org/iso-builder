@@ -16,6 +16,9 @@
 /** The path to the splash logo image. */
 #define CONFIG_SPLASH_LOGO_PATH "./assets/splash.png"
 
+/** The path to the black background image for clean boot. */
+#define CONFIG_BLACK_PNG_PATH "./assets/black.png"
+
 // ---
 // Github Configuration
 // ---
@@ -62,6 +65,15 @@
 
 /** The path to ldlinux.c32 on the host system. */
 #define CONFIG_LDLINUX_PATH "/usr/lib/syslinux/modules/bios/ldlinux.c32"
+
+/** The path to vesamenu.c32 on the host system. */
+#define CONFIG_VESAMENU_C32_PATH "/usr/lib/syslinux/modules/bios/vesamenu.c32"
+
+/** The path to libutil.c32 on the host system. */
+#define CONFIG_LIBUTIL_C32_PATH "/usr/lib/syslinux/modules/bios/libutil.c32"
+
+/** The path to libcom32.c32 on the host system. */
+#define CONFIG_LIBCOM32_C32_PATH "/usr/lib/syslinux/modules/bios/libcom32.c32"
 
 /** The path to the GRUB EFI binary on the host system. */
 #define CONFIG_GRUB_EFI_PATH "/usr/lib/grub/x86_64-efi/monolithic/grubx64.efi"

@@ -294,7 +294,7 @@ int create_iso(const char *rootfs_path, const char *output_path)
     LOG_INFO("Creating bootable ISO image...");
 
     // Construct the staging directory path.
-    snprintf(staging_path, sizeof(staging_path), "%s/../iso_staging", rootfs_path);
+    snprintf(staging_path, sizeof(staging_path), "%s/../staging-iso", rootfs_path);
 
     // Create staging directory.
     if (create_staging_directory(staging_path) != 0)
