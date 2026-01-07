@@ -144,15 +144,19 @@ int main(int argc, char *argv[])
 
     LOG_INFO("Phase 3 complete: Boot configured");
 
+    // Construct the ISO path with version in current directory.
+    char iso_output_path[256];
+    snprintf(iso_output_path, sizeof(iso_output_path), "limeos-%s.iso", version);
+
     // Create the final ISO image.
-    if (create_iso(CONFIG_ROOTFS_DIRECTORY, CONFIG_OUTPUT_ISO_PATH) != 0)
+    if (create_iso(CONFIG_ROOTFS_DIRECTORY, iso_output_path) != 0)
     {
         LOG_ERROR("Failed to create ISO image");
         return 1;
     }
 
     LOG_INFO("Phase 4 complete: ISO assembled");
-    LOG_INFO("Build complete! ISO available at: %s", CONFIG_OUTPUT_ISO_PATH);
+    LOG_INFO("Build complete! ISO available at: %s", iso_output_path);
 
     return 0;
 }

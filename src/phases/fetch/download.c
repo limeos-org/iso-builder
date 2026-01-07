@@ -5,13 +5,13 @@
 
 #include "all.h"
 
-static int copy_local_component(const char *name, const char *output_directory)
+static int copy_local_component(const Component *component, const char *output_directory)
 {
     char local_path[COMMAND_PATH_MAX_LENGTH];
     char output_path[COMMAND_PATH_MAX_LENGTH];
 
-    // Construct the local binary path with limeos- prefix.
-    snprintf(local_path, sizeof(local_path), "./bin/limeos-%s", name);
+    // Construct the local binary path using the binary name.
+    snprintf(local_path, sizeof(local_path), "./bin/%s", component->binary_name);
 
     // Check if the local binary exists.
     if (!file_exists(local_path))
@@ -22,8 +22,8 @@ static int copy_local_component(const char *name, const char *output_directory)
     // Create the output directory if it does not exist.
     mkdir_p(output_directory);
 
-    // Construct the output path.
-    snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, name);
+    // Construct the output path using the repo name.
+    snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, component->repo_name);
 
     // Copy the local binary to the output directory.
     if (copy_file(local_path, output_path) != 0)
@@ -31,7 +31,7 @@ static int copy_local_component(const char *name, const char *output_directory)
         return -1;
     }
 
-    LOG_INFO("Using local limeos-%s", name);
+    LOG_INFO("Using local %s", component->binary_name);
 
     return 0;
 }
@@ -44,7 +44,7 @@ static size_t write_download_chunk(
 }
 
 static int download_remote(
-    const char *name,
+    const Component *component,
     const char *version,
     const char *output_directory
 )
@@ -58,14 +58,14 @@ static int download_remote(
 
     // Resolve the version to the latest within the major version.
     int resolve_result = resolve_version(
-        name, version, resolved_version, sizeof(resolved_version)
+        component->repo_name, version, resolved_version, sizeof(resolved_version)
     );
     if (resolve_result == -1)
     {
         // API failure - fall back to exact version.
         LOG_WARNING(
             "Version resolution failed for %s, using exact version %s",
-            name, version
+            component->repo_name, version
         );
         strncpy(resolved_version, version, sizeof(resolved_version) - 1);
         resolved_version[sizeof(resolved_version) - 1] = '\0';
@@ -80,14 +80,14 @@ static int download_remote(
     snprintf(
         url, sizeof(url),
         "https://github.com/%s/%s/releases/download/%s/%s",
-        CONFIG_GITHUB_ORG, name, resolved_version, name
+        CONFIG_GITHUB_ORG, component->repo_name, resolved_version, component->repo_name
     );
 
     // Construct the local output file path.
-    snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, name);
+    snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, component->repo_name);
 
     // Log the fetch operation.
-    LOG_INFO("Fetching %s %s", name, resolved_version);
+    LOG_INFO("Fetching %s %s", component->repo_name, resolved_version);
 
     // Create the output directory if it does not exist.
     mkdir_p(output_directory);
@@ -143,7 +143,7 @@ static int download_remote(
         return -1;
     }
 
-    LOG_INFO("Downloaded %s", name);
+    LOG_INFO("Downloaded %s", component->repo_name);
 
     return 0;
 }
@@ -167,19 +167,19 @@ void cleanup_fetch(void)
 }
 
 int fetch_component(
-    const char *name,
+    const Component *component,
     const char *version,
     const char *output_directory
 )
 {
     // Try local binary first.
-    if (copy_local_component(name, output_directory) == 0)
+    if (copy_local_component(component, output_directory) == 0)
     {
         return 0;
     }
 
     // Fall back to remote download.
-    return download_remote(name, version, output_directory);
+    return download_remote(component, version, output_directory);
 }
 
 int fetch_all_components(const char *version, const char *output_directory)
@@ -189,9 +189,10 @@ int fetch_all_components(const char *version, const char *output_directory)
     // Fetch required components.
     for (int i = 0; i < CONFIG_REQUIRED_COMPONENTS_COUNT; i++)
     {
-        if (fetch_component(CONFIG_REQUIRED_COMPONENTS[i], version, output_directory) != 0)
+        const Component *component = &CONFIG_REQUIRED_COMPONENTS[i];
+        if (fetch_component(component, version, output_directory) != 0)
         {
-            LOG_ERROR("Required component failed: %s", CONFIG_REQUIRED_COMPONENTS[i]);
+            LOG_ERROR("Required component failed: %s", component->repo_name);
             return -1;
         }
     }
@@ -199,9 +200,10 @@ int fetch_all_components(const char *version, const char *output_directory)
     // Fetch optional components.
     for (int i = 0; i < CONFIG_OPTIONAL_COMPONENTS_COUNT; i++)
     {
-        if (fetch_component(CONFIG_OPTIONAL_COMPONENTS[i], version, output_directory) != 0)
+        const Component *component = &CONFIG_OPTIONAL_COMPONENTS[i];
+        if (fetch_component(component, version, output_directory) != 0)
         {
-            LOG_WARNING("Optional component skipped: %s", CONFIG_OPTIONAL_COMPONENTS[i]);
+            LOG_WARNING("Optional component skipped: %s", component->repo_name);
         }
     }
 

@@ -25,7 +25,7 @@ void cleanup_fetch(void);
 /**
  * Fetches a component binary from local cache or GitHub releases.
  *
- * @param name The component name (e.g., "window-manager").
+ * @param component The component definition with repo and binary names.
  * @param version The release version tag to download.
  * @param output_directory The directory to save the binary.
  *
@@ -33,7 +33,7 @@ void cleanup_fetch(void);
  * @return - `-1` - Indicates a failure.
  */
 int fetch_component(
-    const char *name,
+    const Component *component,
     const char *version,
     const char *output_directory
 );

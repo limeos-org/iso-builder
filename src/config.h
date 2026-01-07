@@ -16,9 +16,6 @@
 /** The path to the splash logo image. */
 #define CONFIG_SPLASH_LOGO_PATH "./assets/splash.png"
 
-/** The path where the final ISO will be created. */
-#define CONFIG_OUTPUT_ISO_PATH "./dist/limeos.iso"
-
 // ---
 // Github Configuration
 // ---
@@ -90,34 +87,37 @@
 #define CONFIG_INSTALL_BIN_PATH "/usr/local/bin"
 
 // ---
-// Service Configuration
-// ---
-
-/** The systemd service name for the installer. */
-#define CONFIG_INSTALLER_SERVICE_NAME "limeos-installer"
-
-/** The installer binary name. */
-#define CONFIG_INSTALLER_BINARY_NAME "installation-wizard"
-
-// ---
 // Component Configuration
 // ---
 
-/** The list of required LimeOS component binaries. */
-static const char *CONFIG_REQUIRED_COMPONENTS[] = {
-    CONFIG_INSTALLER_BINARY_NAME
+/** Component definition with repository and binary names. */
+typedef struct {
+    const char *repo_name;    // GitHub repository name
+    const char *binary_name;  // Installed binary name
+} Component;
+
+/** Required LimeOS components. */
+static const Component CONFIG_REQUIRED_COMPONENTS[] = {
+    { "installation-wizard", "limeos-installation-wizard" }
 };
 
 /** The number of required components. */
 #define CONFIG_REQUIRED_COMPONENTS_COUNT \
     (int)(sizeof(CONFIG_REQUIRED_COMPONENTS) / sizeof(CONFIG_REQUIRED_COMPONENTS[0]))
 
-/** The list of optional LimeOS component binaries. */
-static const char *CONFIG_OPTIONAL_COMPONENTS[] = {
-    "window-manager",
-    "display-manager"
+/** Optional LimeOS components. */
+static const Component CONFIG_OPTIONAL_COMPONENTS[] = {
+    { "window-manager", "limeos-window-manager" },
+    { "display-manager", "limeos-display-manager" }
 };
 
 /** The number of optional components. */
 #define CONFIG_OPTIONAL_COMPONENTS_COUNT \
     (int)(sizeof(CONFIG_OPTIONAL_COMPONENTS) / sizeof(CONFIG_OPTIONAL_COMPONENTS[0]))
+
+// ---
+// Service Configuration
+// ---
+
+/** The systemd service name for the installer. */
+#define CONFIG_INSTALLER_SERVICE_NAME "limeos-installation-wizard"

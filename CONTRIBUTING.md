@@ -62,13 +62,21 @@ First, install the required dependencies. For Debian-based Linux distributions,
 run:
 
 ```bash
-sudo apt install clang make libcurl4-openssl-dev libjson-c-dev
+sudo apt install \
+   clang \
+   make \
+   libcurl4-openssl-dev \
+   libjson-c-dev
 ```
 
 To verify all build dependencies are installed, run:
 
 ```bash
-dpkg -s clang make libcurl4-openssl-dev libjson-c-dev >/dev/null 2>&1 && echo "OK"
+dpkg -s \
+   clang \
+   make \
+   libcurl4-openssl-dev \
+   libjson-c-dev >/dev/null 2>&1 && echo "OK"
 ```
 
 The output should be "OK" if all is installed, nothing if any are missing.
@@ -137,7 +145,10 @@ semantic versioning format (e.g., `1.0.0`):
 sudo ./bin/limeos-iso-builder 1.0.0
 ```
 
-The build artifacts will be placed in the `./build` directory.
+If you want to use local LimeOS component binaries (e.g.,
+`limeos-installation-wizard`) instead of having the ISO builder download them,
+place them in `./bin`. The ISO builder will automatically detect and prefer them
+over downloads, as long as the filenames match the expected names.
 
 &nbsp;
 
