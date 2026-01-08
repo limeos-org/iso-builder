@@ -24,6 +24,7 @@ static int write_installer_service(const char *rootfs_path)
         "\n"
         "[Service]\n"
         "Type=simple\n"
+        "Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n"
         "ExecStart=" CONFIG_INSTALL_BIN_PATH "/" CONFIG_INSTALLER_SERVICE_NAME "\n"
         "StandardInput=tty\n"
         "StandardOutput=tty\n"

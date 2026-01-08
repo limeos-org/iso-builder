@@ -41,7 +41,8 @@ int create_rootfs(const char *path)
     // Install all packages needed by the installation environment.
     if (run_chroot(path,
         "apt-get install -y --no-install-recommends "
-        "linux-image-amd64 systemd-sysv plymouth plymouth-themes live-boot libncurses6 parted") != 0)
+        "linux-image-amd64 systemd-sysv plymouth plymouth-themes live-boot "
+        "libncurses6 parted dosfstools") != 0)
     {
         LOG_ERROR("Failed to install required packages");
         return -3;
