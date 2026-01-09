@@ -42,11 +42,40 @@ int create_rootfs(const char *path)
     if (run_chroot(path,
         "apt-get install -y --no-install-recommends "
         "linux-image-amd64 systemd-sysv plymouth plymouth-themes live-boot "
-        "libncurses6 parted dosfstools") != 0)
+        "libncurses6 parted dosfstools fastfetch") != 0)
     {
         LOG_ERROR("Failed to install required packages");
         return -3;
     }
+
+    // Configure fastfetch with LimeOS branding.
+    char fastfetch_dir[COMMAND_PATH_MAX_LENGTH];
+    snprintf(fastfetch_dir, sizeof(fastfetch_dir), "%s/etc/fastfetch", path);
+    if (mkdir_p(fastfetch_dir) != 0)
+    {
+        LOG_ERROR("Failed to create fastfetch config directory");
+        return -3;
+    }
+
+    // Copy fastfetch config file.
+    char fastfetch_config_dst[COMMAND_PATH_MAX_LENGTH];
+    snprintf(fastfetch_config_dst, sizeof(fastfetch_config_dst), "%s/etc/fastfetch/config.jsonc", path);
+    if (copy_file("./assets/fastfetch-config.jsonc", fastfetch_config_dst) != 0)
+    {
+        LOG_ERROR("Failed to copy fastfetch config");
+        return -3;
+    }
+
+    // Copy LimeOS logo for fastfetch.
+    char fastfetch_logo_dst[COMMAND_PATH_MAX_LENGTH];
+    snprintf(fastfetch_logo_dst, sizeof(fastfetch_logo_dst), "%s/etc/fastfetch/limeos-logo.txt", path);
+    if (copy_file("./assets/limeos-logo.txt", fastfetch_logo_dst) != 0)
+    {
+        LOG_ERROR("Failed to copy LimeOS logo");
+        return -3;
+    }
+
+    LOG_INFO("Fastfetch configured with LimeOS branding");
 
     // Copy kernel to standard path for boot loaders.
     char kernel_pattern[COMMAND_PATH_MAX_LENGTH];
