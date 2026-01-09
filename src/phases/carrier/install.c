@@ -1,5 +1,6 @@
 /**
- * This code is responsible for installing LimeOS components into the carrier rootfs.
+ * This code is responsible for installing LimeOS components into the
+ * carrier rootfs.
  */
 
 #include "all.h"

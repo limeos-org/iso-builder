@@ -4,13 +4,13 @@
 
 #include "all.h"
 
-/** Size of the EFI boot image in megabytes. 4MB fits GRUB EFI with headroom. */
+/** Size of the EFI boot image in MB. 4MB fits GRUB EFI with headroom. */
 #define EFI_IMAGE_SIZE_MB 4
 
-/** FAT filesystem type for EFI image. FAT12 suits small (<16MB) partitions. */
+/** FAT filesystem type for EFI. FAT12 suits small (<16MB) partitions. */
 #define EFI_FAT_TYPE 12
 
-/** Squashfs compression algorithm. xz provides best ratio for live systems. */
+/** Squashfs compression. xz provides best ratio for live systems. */
 #define SQUASHFS_COMPRESSION "xz"
 
 /** Boot sectors to load per El Torito spec. */

@@ -1,5 +1,6 @@
 /**
- * This code is responsible for configuring the init system in the carrier rootfs.
+ * This code is responsible for configuring the init system in the
+ * carrier rootfs.
  */
 
 #include "all.h"

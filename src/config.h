@@ -10,7 +10,11 @@
 /** The path to the black background image for clean boot. */
 #define CONFIG_BLACK_PNG_PATH "./assets/black.png"
 
-/** The prefix for output ISO filenames (e.g., "limeos" -> "limeos-1.0.0.iso"). */
+/**
+ * The prefix for output ISO filenames.
+ *
+ * Example: "limeos" produces "limeos-1.0.0.iso".
+ */
 #define CONFIG_ISO_FILENAME_PREFIX "limeos"
 
 /** The directory to search for local component binaries before downloading. */
@@ -105,7 +109,7 @@
 /** The installation path for component binaries (relative to rootfs). */
 #define CONFIG_INSTALL_BIN_PATH "/usr/local/bin"
 
-/** The path where the payload rootfs tarball is stored in the carrier rootfs. */
+/** The path where the payload tarball is stored in the carrier rootfs. */
 #define CONFIG_PAYLOAD_ROOTFS_PATH "/usr/share/limeos/rootfs.tar.gz"
 
 /**

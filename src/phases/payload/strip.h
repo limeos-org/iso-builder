@@ -3,9 +3,9 @@
 /**
  * Lightly strips the payload rootfs while preserving user-facing content.
  *
- * Unlike the carrier rootfs, the payload system keeps locales and documentation
- * since it's the user's permanent installation. Only package caches are
- * removed to reduce tarball size.
+ * Unlike the carrier rootfs, the payload system keeps locales and
+ * documentation since it's the user's permanent installation. Only package
+ * caches are removed to reduce tarball size.
  *
  * @param path The path to the payload rootfs directory.
  *
