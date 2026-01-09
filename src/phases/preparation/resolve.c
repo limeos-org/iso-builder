@@ -99,7 +99,7 @@ static int fetch_releases_json(
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, append_api_response_chunk);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, CONFIG_NETWORK_TIMEOUT);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
 
     // Perform the API request.
     result = curl_easy_perform(curl);

@@ -140,7 +140,7 @@ static int fetch_expected_checksum(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, checksums_stream);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, CONFIG_NETWORK_TIMEOUT);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
     result = curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
     curl_easy_cleanup(curl);
@@ -345,7 +345,7 @@ static int download_remote(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, output_file);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, CONFIG_NETWORK_TIMEOUT);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
 
     // Perform the download.
     result = curl_easy_perform(curl);

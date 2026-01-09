@@ -38,9 +38,6 @@
 /** The filename for release checksums. */
 #define CONFIG_CHECKSUMS_FILENAME "SHA256SUMS"
 
-/** Network timeout in seconds for curl operations. */
-#define CONFIG_NETWORK_TIMEOUT 60
-
 // ---
 // Boot Configuration
 // ---
@@ -56,30 +53,6 @@
 
 /** The GRUB menu entry name displayed during boot. */
 #define CONFIG_GRUB_MENU_ENTRY_NAME "LimeOS Installer"
-
-/**
- * The size of the EFI boot image in megabytes.
- *
- * 4MB provides sufficient space for the GRUB EFI binary (~1MB) plus
- * headroom for FAT filesystem overhead and future additions.
- */
-#define CONFIG_EFI_IMAGE_SIZE_MB 4
-
-/**
- * The FAT filesystem type for the EFI boot image.
- *
- * FAT12 is appropriate for small (<16MB) EFI system partitions.
- * Valid values: 12, 16, 32.
- */
-#define CONFIG_EFI_FAT_TYPE 12
-
-/**
- * The compression algorithm for the squashfs filesystem.
- *
- * Options: gzip, lzo, lz4, xz, zstd.
- * xz provides the best compression ratio for live filesystems.
- */
-#define CONFIG_SQUASHFS_COMPRESSION "xz"
 
 // ---
 // System Paths (Host Dependencies)
@@ -188,8 +161,7 @@
 /**
  * A type representing a LimeOS component with its repository and binary names.
  */
-typedef struct
-{
+typedef struct {
     const char *repo_name;
     const char *binary_name;
 } Component;
