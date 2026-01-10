@@ -9,10 +9,6 @@
 static volatile int g_interrupted = 0;
 static char g_cleanup_dir[COMMAND_PATH_MAX_LENGTH] = {0};
 
-/**
- * Signal handler for SIGINT and SIGTERM.
- * Sets the interrupted flag for graceful shutdown.
- */
 static void signal_handler(int sig)
 {
     (void)sig;
