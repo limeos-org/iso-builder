@@ -1,5 +1,16 @@
 #pragma once
 
+/*
+ * semistatic: expands to 'static' normally, or nothing when -DTESTING is set.
+ * This exposes functions for unit testing while keeping them static in 
+ * production. Declare test-accessible functions in tests/all.h.
+ */
+#ifdef TESTING
+#define semistatic
+#else
+#define semistatic static
+#endif
+
 #include <curl/curl.h>
 #include <errno.h>
 #include <getopt.h>
