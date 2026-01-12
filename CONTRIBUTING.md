@@ -20,6 +20,7 @@ section listed first will take precedence.
 
 - [Building the ISO builder](#building-the-iso-builder)
 - [Running the ISO builder](#running-the-iso-builder)
+- [Testing the ISO builder](#testing-the-iso-builder)
 - [Understanding the build flow](#understanding-the-build-flow)
 
 **General Contributing Guidelines**
@@ -154,6 +155,19 @@ If you want to use local LimeOS component binaries (e.g.,
 `limeos-installation-wizard`) instead of having the ISO builder download them,
 place them in `./bin`. The ISO builder will automatically detect and prefer them
 over downloads, as long as the filenames match the expected names.
+
+### Testing the ISO builder
+
+This subsection explains how to run the unit test suite.
+
+First, run the test suite:
+
+```bash
+make test
+```
+
+Finally, verify that all tests pass. If any tests fail, review the output to
+identify the failing test and investigate the cause before submitting changes.
 
 ### Understanding the build flow
 
