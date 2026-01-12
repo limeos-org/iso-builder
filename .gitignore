@@ -3,6 +3,9 @@ obj/
 bin/
 tmp/
 
+# Ignore cache directory
+cache/
+
 # Ignore editor and system files
 *.swp
 *~

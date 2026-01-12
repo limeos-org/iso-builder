@@ -13,12 +13,16 @@ static void print_usage(const char *program_name)
     printf("  <version>       Version tag to build (e.g., 1.0.0)\n");
     printf("\n");
     printf("Options:\n");
+    printf("  --cache-dir=DIR Use DIR for caching (default: %s)\n", CONFIG_DEFAULT_CACHE_DIR);
+    printf("  --no-cache      Disable caching, build everything fresh\n");
     printf("  --help          Show this help message\n");
 }
 
 int main(int argc, char *argv[])
 {
     const char *version = NULL;
+    const char *cache_dir = CONFIG_DEFAULT_CACHE_DIR;
+    int use_cache = 1;
     char build_dir[COMMAND_PATH_MAX_LENGTH];
     char components_dir[COMMAND_PATH_MAX_LENGTH];
     char base_rootfs_dir[COMMAND_PATH_MAX_LENGTH];
@@ -45,15 +49,23 @@ int main(int argc, char *argv[])
     int option;
     static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
+        {"cache-dir", required_argument, 0, 'c'},
+        {"no-cache", no_argument, 0, 'n'},
         {0, 0, 0, 0}
     };
-    while ((option = getopt_long(argc, argv, "h", long_options, NULL)) != -1)
+    while ((option = getopt_long(argc, argv, "hc:n", long_options, NULL)) != -1)
     {
         switch (option)
         {
             case 'h':
                 print_usage(argv[0]);
                 return 0;
+            case 'c':
+                cache_dir = optarg;
+                break;
+            case 'n':
+                use_cache = 0;
+                break;
             default:
                 print_usage(argv[0]);
                 return 1;
@@ -76,6 +88,16 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // Initialize cache if enabled.
+    if (use_cache)
+    {
+        if (init_cache(cache_dir) != 0)
+        {
+            LOG_WARNING("Failed to initialize cache, continuing without caching");
+            use_cache = 0;
+        }
+    }
+
     // Create a secure temporary build directory.
     if (create_secure_tmpdir(build_dir, sizeof(build_dir)) != 0)
     {
@@ -94,6 +116,10 @@ int main(int argc, char *argv[])
     snprintf(carrier_rootfs_dir, sizeof(carrier_rootfs_dir), "%s/carrier-rootfs", build_dir);
 
     LOG_INFO("Building ISO for version %s", version);
+    if (use_cache)
+    {
+        LOG_INFO("Using cache directory: %s", cache_dir);
+    }
 
     // Phase 1: Preparation - fetch components from GitHub.
     if (run_preparation_phase(version, components_dir) != 0)
@@ -103,8 +129,8 @@ int main(int argc, char *argv[])
     }
     if (check_interrupted()) return 130;
 
-    // Phase 2: Base - create and strip base rootfs.
-    if (run_base_phase(base_rootfs_dir) != 0)
+    // Phase 2: Base - create and strip base rootfs (with caching).
+    if (run_base_phase(base_rootfs_dir, use_cache ? cache_dir : NULL) != 0)
     {
         exit_code = 1;
         goto cleanup;
@@ -112,7 +138,7 @@ int main(int argc, char *argv[])
     if (check_interrupted()) return 130;
 
     // Phase 3: Payload - copy base, install packages, brand, package.
-    if (run_payload_phase(base_rootfs_dir, payload_rootfs_dir, payload_tarball_path, version) != 0)
+    if (run_payload_phase(base_rootfs_dir, payload_rootfs_dir, payload_tarball_path, version, use_cache ? cache_dir : NULL) != 0)
     {
         exit_code = 1;
         goto cleanup;
@@ -120,7 +146,7 @@ int main(int argc, char *argv[])
     if (check_interrupted()) return 130;
 
     // Phase 4: Carrier - copy base, install packages, embed payload.
-    if (run_carrier_phase(base_rootfs_dir, carrier_rootfs_dir, payload_tarball_path, components_dir) != 0)
+    if (run_carrier_phase(base_rootfs_dir, carrier_rootfs_dir, payload_tarball_path, components_dir, use_cache ? cache_dir : NULL) != 0)
     {
         exit_code = 1;
         goto cleanup;

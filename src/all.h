@@ -45,3 +45,4 @@
 #include "utils/log.h"
 #include "utils/version.h"
 #include "utils/dependencies.h"
+#include "utils/cache.h"

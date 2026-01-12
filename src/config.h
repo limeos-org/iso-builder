@@ -4,6 +4,18 @@
 // Build Configuration
 // ---
 
+/** The default cache directory for storing reusable build artifacts. */
+#define CONFIG_DEFAULT_CACHE_DIR "./cache"
+
+/** The filename for the cached base rootfs tarball. */
+#define CONFIG_CACHE_BASE_ROOTFS_FILENAME "base-rootfs.tar.gz"
+
+/** The filename for the cached payload rootfs tarball. */
+#define CONFIG_CACHE_PAYLOAD_ROOTFS_FILENAME "payload-rootfs.tar.gz"
+
+/** The directory name for the shared apt cache. */
+#define CONFIG_CACHE_APT_DIR "apt-cache"
+
 /** The path to the splash logo image. */
 #define CONFIG_SPLASH_LOGO_PATH "./assets/splash.png"
 

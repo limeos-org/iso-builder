@@ -8,7 +8,8 @@ int run_carrier_phase(
     const char *base_rootfs_dir,
     const char *rootfs_dir,
     const char *tarball_path,
-    const char *components_dir
+    const char *components_dir,
+    const char *cache_dir
 )
 {
     if (create_carrier_rootfs(base_rootfs_dir, rootfs_dir) != 0)
@@ -17,28 +18,47 @@ int run_carrier_phase(
         return -1;
     }
 
+    // Mount shared apt cache if caching is enabled.
+    if (cache_dir)
+    {
+        if (mount_apt_cache(cache_dir, rootfs_dir) != 0)
+        {
+            LOG_WARNING("Failed to mount apt cache, continuing without it");
+        }
+    }
+
     if (embed_payload_rootfs(rootfs_dir, tarball_path) != 0)
     {
         LOG_ERROR("Failed to embed payload rootfs");
+        if (cache_dir) unmount_apt_cache(rootfs_dir);
         return -1;
     }
 
     if (install_carrier_components(rootfs_dir, components_dir) != 0)
     {
         LOG_ERROR("Failed to install components");
+        if (cache_dir) unmount_apt_cache(rootfs_dir);
         return -1;
     }
 
     if (configure_carrier_init(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to configure init");
+        if (cache_dir) unmount_apt_cache(rootfs_dir);
         return -1;
     }
 
     if (bundle_packages(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to bundle packages");
+        if (cache_dir) unmount_apt_cache(rootfs_dir);
         return -1;
+    }
+
+    // Unmount apt cache before cleanup.
+    if (cache_dir)
+    {
+        unmount_apt_cache(rootfs_dir);
     }
 
     // Clean up apt cache after all packages are installed.
