@@ -210,7 +210,7 @@ The build process consists of five sequential phases:
           │
           ▼
    ┌──────────────┐
-   │   Assembly   │  Configure bootloaders, create squashfs, build ISO
+   │   Assembly   │  Configure bootloaders, create squashfs, build ISO.
    └──────────────┘
 ```
 
