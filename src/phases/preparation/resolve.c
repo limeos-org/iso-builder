@@ -12,7 +12,9 @@
  */
 #define API_BUFFER_SIZE 8192
 
-/** A type representing a dynamically growing buffer for HTTP response data. */
+/**
+ * A type representing a dynamically growing buffer for HTTP response data.
+ */
 typedef struct
 {
     char *data;
@@ -89,7 +91,7 @@ static int fetch_releases_json(
 
     // Set up required headers for GitHub API.
     headers = curl_slist_append(headers, "Accept: application/vnd.github+json");
-    headers = curl_slist_append(headers, "X-GitHub-Api-Version: 2022-11-28");
+    headers = curl_slist_append(headers, "X-GitHub-Api-Version: " CONFIG_GITHUB_API_VERSION);
 
     // Configure curl options for the API request.
     curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -97,6 +99,7 @@ static int fetch_releases_json(
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, append_api_response_chunk);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
 
     // Perform the API request.
     result = curl_easy_perform(curl);

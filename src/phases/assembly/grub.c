@@ -30,7 +30,7 @@ int setup_grub(const char *rootfs_path)
         "set timeout_style=hidden\n"
         "set timeout=0\n"
         "\n"
-        "menuentry \"LimeOS Installer\" {\n"
+        "menuentry \"" CONFIG_GRUB_MENU_ENTRY_NAME "\" {\n"
         "    linux " CONFIG_BOOT_KERNEL_PATH " " CONFIG_BOOT_KERNEL_PARAMS "\n"
         "    initrd " CONFIG_BOOT_INITRD_PATH "\n"
         "}\n";

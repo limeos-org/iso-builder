@@ -1,5 +1,6 @@
 /**
- * This code is responsible for configuring the init system in the rootfs.
+ * This code is responsible for configuring the init system in the
+ * carrier rootfs.
  */
 
 #include "all.h"
@@ -104,9 +105,9 @@ static int disable_tty1_getty(const char *rootfs_path)
     return 0;
 }
 
-int configure_init(const char *rootfs_path)
+int configure_carrier_init(const char *rootfs_path)
 {
-    LOG_INFO("Configuring init system...");
+    LOG_INFO("Configuring carrier init system...");
 
     // Write the installer service unit file.
     if (write_installer_service(rootfs_path) != 0)
@@ -132,7 +133,7 @@ int configure_init(const char *rootfs_path)
         return -4;
     }
 
-    LOG_INFO("Init system configured successfully");
+    LOG_INFO("Carrier init system configured successfully");
 
     return 0;
 }

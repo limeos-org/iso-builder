@@ -190,3 +190,61 @@ int find_first_glob(const char *pattern, char *out_path, size_t buffer_length);
  * @return - `-1` - Indicates failure.
  */
 int create_secure_tmpdir(char *out_path, size_t buffer_length);
+
+/**
+ * Cleans apt cache and lists directories in a rootfs.
+ *
+ * Removes /var/cache/apt and /var/lib/apt/lists, then recreates the
+ * empty directories. This reduces rootfs size while keeping apt functional.
+ *
+ * @param rootfs_path The path to the rootfs directory.
+ *
+ * @return - `0` - Indicates success.
+ * @return - `-1` - Indicates apt cache removal failure.
+ * @return - `-2` - Indicates apt lists removal failure.
+ */
+int cleanup_apt_directories(const char *rootfs_path);
+
+/**
+ * Copies kernel and initrd to standard boot paths.
+ *
+ * Finds vmlinuz-* and initrd.img-* using glob patterns and copies them
+ * to /boot/vmlinuz and /boot/initrd.img respectively.
+ *
+ * @param rootfs_path The path to the rootfs directory.
+ *
+ * @return - `0` - Indicates success.
+ * @return - `-1` - Indicates kernel copy failure.
+ * @return - `-2` - Indicates initrd copy failure.
+ */
+int copy_kernel_and_initrd(const char *rootfs_path);
+
+/**
+ * Removes unnecessary firmware from a rootfs.
+ *
+ * Removes WiFi, Bluetooth, server NIC, and audio DSP firmware while
+ * preserving GPU firmware (for Plymouth) and CPU microcode (for stability).
+ *
+ * @param rootfs_path The path to the rootfs directory.
+ */
+void cleanup_unnecessary_firmware(const char *rootfs_path);
+
+/**
+ * Blacklists wireless and bluetooth kernel modules.
+ *
+ * Creates /etc/modprobe.d/blacklist-wireless.conf to prevent modules from
+ * loading and looking for firmware that was removed.
+ *
+ * @param rootfs_path The path to the rootfs directory.
+ */
+void blacklist_wireless_modules(const char *rootfs_path);
+
+/**
+ * Masks the systemd-rfkill service.
+ *
+ * Since wireless/bluetooth hardware is disabled, rfkill has nothing to
+ * manage and would fail on boot.
+ *
+ * @param rootfs_path The path to the rootfs directory.
+ */
+void mask_rfkill_service(const char *rootfs_path);

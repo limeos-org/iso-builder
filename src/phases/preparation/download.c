@@ -1,6 +1,6 @@
 /**
- * This code is responsible for fetching LimeOS component binaries from local
- * cache or GitHub releases.
+ * This code is responsible for downloading LimeOS component binaries from
+ * GitHub releases or loading them from the local filesystem.
  */
 
 #include "all.h"
@@ -14,10 +14,9 @@
 /** Length of SHA256 hash in hex format (64 chars + null). */
 #define SHA256_HEX_LENGTH 65
 
-/**
- * Computes the SHA256 hash of a file and returns it as a hex string.
- */
-static int compute_file_sha256(const char *path, char *out_hash, size_t hash_len)
+static int compute_file_sha256(
+    const char *path, char *out_hash, size_t hash_len
+)
 {
     unsigned char hash[SHA256_DIGEST_LEN];
     unsigned char buffer[CHECKSUM_BUFFER_SIZE];
@@ -89,9 +88,6 @@ static int compute_file_sha256(const char *path, char *out_hash, size_t hash_len
     return 0;
 }
 
-/**
- * Downloads a checksums file and extracts the expected hash for a binary.
- */
 static int fetch_expected_checksum(
     const char *repo_name,
     const char *version,
@@ -117,7 +113,7 @@ static int fetch_expected_checksum(
     // Construct the checksums file URL.
     snprintf(
         url, sizeof(url),
-        "https://github.com/%s/%s/releases/download/%s/SHA256SUMS",
+        "https://github.com/%s/%s/releases/download/%s/" CONFIG_CHECKSUMS_FILENAME,
         CONFIG_GITHUB_ORG, repo_name, version
     );
 
@@ -144,6 +140,7 @@ static int fetch_expected_checksum(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, checksums_stream);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
     result = curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
     curl_easy_cleanup(curl);
@@ -199,9 +196,6 @@ static int fetch_expected_checksum(
     return found ? 0 : -1;
 }
 
-/**
- * Verifies the SHA256 checksum of a downloaded file.
- */
 static int verify_checksum(
     const char *file_path,
     const char *repo_name,
@@ -239,13 +233,15 @@ static int verify_checksum(
     return 0;
 }
 
-static int copy_local_component(const Component *component, const char *output_directory)
+static int copy_local_component(
+    const Component *component, const char *output_directory
+)
 {
     char local_path[COMMAND_PATH_MAX_LENGTH];
     char output_path[COMMAND_PATH_MAX_LENGTH];
 
     // Construct the local binary path using the binary name.
-    snprintf(local_path, sizeof(local_path), "./bin/%s", component->binary_name);
+    snprintf(local_path, sizeof(local_path), CONFIG_LOCAL_BIN_DIR "/%s", component->binary_name);
 
     // Check if the local binary exists.
     if (!file_exists(local_path))
@@ -349,6 +345,7 @@ static int download_remote(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, output_file);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
 
     // Perform the download.
     result = curl_easy_perform(curl);
@@ -377,7 +374,16 @@ static int download_remote(
         return -1;
     }
 
-    LOG_INFO("Downloaded %s", component->repo_name);
+    // Validate downloaded file size.
+    struct stat file_stat;
+    if (stat(output_path, &file_stat) != 0 || file_stat.st_size == 0)
+    {
+        remove(output_path);
+        LOG_ERROR("Download failed: empty or missing file for %s", component->repo_name);
+        return -1;
+    }
+
+    LOG_INFO("Downloaded %s (%ld bytes)", component->repo_name, (long)file_stat.st_size);
 
     // Verify the checksum of the downloaded file.
     if (verify_checksum(output_path, component->repo_name, resolved_version, component->repo_name) != 0)

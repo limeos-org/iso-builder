@@ -1,16 +1,17 @@
 /**
- * This code is responsible for installing LimeOS components into the rootfs.
+ * This code is responsible for installing LimeOS components into the
+ * carrier rootfs.
  */
 
 #include "all.h"
 
-int install_components(const char *rootfs_path, const char *components_path)
+int install_carrier_components(const char *rootfs_path, const char *components_path)
 {
     char src_path[COMMAND_PATH_MAX_LENGTH];
     char dst_path[COMMAND_PATH_MAX_LENGTH];
     char bin_dir[COMMAND_PATH_MAX_LENGTH];
 
-    LOG_INFO("Installing components into rootfs...");
+    LOG_INFO("Installing components into carrier rootfs...");
 
     // Create the target directory for binaries.
     snprintf(bin_dir, sizeof(bin_dir), "%s" CONFIG_INSTALL_BIN_PATH, rootfs_path);
@@ -35,7 +36,11 @@ int install_components(const char *rootfs_path, const char *components_path)
         }
 
         // Make the binary executable.
-        chmod_file("+x", dst_path);
+        if (chmod_file("+x", dst_path) != 0)
+        {
+            LOG_ERROR("Failed to make component executable: %s", component->binary_name);
+            return -1;
+        }
 
         LOG_INFO("Installed %s", component->binary_name);
     }
@@ -62,7 +67,11 @@ int install_components(const char *rootfs_path, const char *components_path)
         }
 
         // Make the binary executable.
-        chmod_file("+x", dst_path);
+        if (chmod_file("+x", dst_path) != 0)
+        {
+            LOG_WARNING("Failed to make optional component executable: %s", component->binary_name);
+            continue;
+        }
 
         LOG_INFO("Installed %s", component->binary_name);
     }

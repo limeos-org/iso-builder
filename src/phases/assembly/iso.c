@@ -4,6 +4,24 @@
 
 #include "all.h"
 
+/** Size of the EFI boot image in MB. 4MB fits GRUB EFI with headroom. */
+#define EFI_IMAGE_SIZE_MB 4
+
+/** FAT filesystem type for EFI. FAT12 suits small (<16MB) partitions. */
+#define EFI_FAT_TYPE 12
+
+/** Squashfs compression. xz provides best ratio for live systems. */
+#define SQUASHFS_COMPRESSION "xz"
+
+/** Boot sectors to load per El Torito spec. */
+#define BOOT_LOAD_SECTORS 4
+
+/** Maximum cleanup retry attempts before giving up. */
+#define CLEANUP_MAX_RETRIES 3
+
+/** Seconds to wait between cleanup retries. */
+#define CLEANUP_RETRY_DELAY_SECONDS 1
+
 static int create_staging_directory(const char *staging_path)
 {
     char live_path[COMMAND_PATH_MAX_LENGTH];
@@ -25,11 +43,10 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
     char squashfs_path[COMMAND_PATH_MAX_LENGTH];
     char quoted_squashfs[COMMAND_QUOTED_MAX_LENGTH];
 
-    // Use xz compression for best compression ratio on live filesystem.
     LOG_INFO("Creating squashfs filesystem...");
 
+    // Prepare paths and quote them to prevent shell injection.
     snprintf(squashfs_path, sizeof(squashfs_path), "%s/live/filesystem.squashfs", staging_path);
-
     if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
     {
         LOG_ERROR("Failed to quote rootfs path");
@@ -41,14 +58,15 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
         return -1;
     }
 
+    // Create the squashfs filesystem.
     snprintf(
         command, sizeof(command),
-        "mksquashfs %s %s -comp xz -noappend",
+        "mksquashfs %s %s -comp " SQUASHFS_COMPRESSION " -noappend",
         quoted_rootfs, quoted_squashfs
     );
     if (run_command(command) != 0)
     {
-        LOG_ERROR("Failed to create squashfs");
+        LOG_ERROR("Failed to create squashfs from %s", rootfs_path);
         return -1;
     }
 
@@ -90,7 +108,6 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     char command[COMMAND_MAX_LENGTH];
     char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
     char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
-
     snprintf(src_path, sizeof(src_path), "%s/isolinux", rootfs_path);
     if (shell_quote_path(src_path, quoted_src, sizeof(quoted_src)) != 0)
     {
@@ -105,7 +122,7 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     snprintf(command, sizeof(command), "cp -r %s %s/", quoted_src, quoted_dst);
     if (run_command(command) != 0)
     {
-        LOG_ERROR("Failed to copy isolinux");
+        LOG_ERROR("Failed to copy isolinux from %s to %s", src_path, staging_path);
         return -1;
     }
 
@@ -149,19 +166,19 @@ static int setup_efi_image(const char *staging_path)
     snprintf(
         command, sizeof(command),
         "dd if=/dev/zero of=%s bs=1M count=%d",
-        quoted_efi_img, CONFIG_EFI_IMAGE_SIZE_MB
+        quoted_efi_img, EFI_IMAGE_SIZE_MB
     );
     if (run_command(command) != 0)
     {
-        LOG_ERROR("Failed to create EFI image");
+        LOG_ERROR("Failed to create EFI image: %s", efi_img_path);
         return -1;
     }
 
-    // Format as FAT12, appropriate for small (<16MB) EFI system partitions.
-    snprintf(command, sizeof(command), "mkfs.fat -F 12 %s", quoted_efi_img);
+    // Format as FAT, appropriate for small EFI system partitions.
+    snprintf(command, sizeof(command), "mkfs.fat -F %d %s", EFI_FAT_TYPE, quoted_efi_img);
     if (run_command(command) != 0)
     {
-        LOG_ERROR("Failed to format EFI image");
+        LOG_ERROR("Failed to format EFI image: %s", efi_img_path);
         return -1;
     }
 
@@ -173,7 +190,7 @@ static int setup_efi_image(const char *staging_path)
     snprintf(command, sizeof(command), "mount -o loop %s %s", quoted_efi_img, quoted_mount);
     if (run_command(command) != 0)
     {
-        LOG_ERROR("Failed to mount EFI image");
+        LOG_ERROR("Failed to mount EFI image %s at %s", efi_img_path, mount_path);
         rmdir(mount_path);
         return -1;
     }
@@ -208,7 +225,7 @@ static int setup_efi_image(const char *staging_path)
         );
         if (run_command(command) != 0)
         {
-            LOG_ERROR("Failed to create GRUB EFI image");
+            LOG_ERROR("Failed to create GRUB EFI image at %s", efi_binary_dst);
             snprintf(command, sizeof(command), "umount %s", quoted_mount);
             if (run_command(command) != 0)
             {
@@ -253,7 +270,6 @@ static int run_xorriso(const char *staging_path, const char *output_path)
 
     // Build hybrid ISO supporting both BIOS (isolinux) and UEFI (EFI image)
     // boot.
-    // -boot-load-size 4: Load 4 sectors (2KB) of boot image per El Torito spec.
     // -isohybrid-gpt-basdat: Mark EFI partition as basic data for GPT systems.
     LOG_INFO("Running xorriso to create hybrid ISO...");
     snprintf(
@@ -263,16 +279,16 @@ static int run_xorriso(const char *staging_path, const char *output_path)
         "-isohybrid-mbr %s "
         "-c isolinux/boot.cat "
         "-b isolinux/isolinux.bin "
-        "-no-emul-boot -boot-load-size 4 -boot-info-table "
+        "-no-emul-boot -boot-load-size %d -boot-info-table "
         "-eltorito-alt-boot "
         "-e boot/grub/efiboot.img "
         "-no-emul-boot -isohybrid-gpt-basdat "
         "%s",
-        quoted_output, CONFIG_ISOLINUX_MBR_PATH, quoted_staging
+        quoted_output, CONFIG_ISOLINUX_MBR_PATH, BOOT_LOAD_SECTORS, quoted_staging
     );
     if (run_command(command) != 0)
     {
-        LOG_ERROR("Failed to create ISO image");
+        LOG_ERROR("Failed to create ISO image: %s", output_path);
         return -1;
     }
 
@@ -281,8 +297,7 @@ static int run_xorriso(const char *staging_path, const char *output_path)
 
 static void cleanup_staging(const char *staging_path)
 {
-    // Retry cleanup up to 3 times with a short delay between attempts.
-    for (int attempt = 1; attempt <= 3; attempt++)
+    for (int attempt = 1; attempt <= CLEANUP_MAX_RETRIES; attempt++)
     {
         if (rm_rf(staging_path) == 0)
         {
@@ -290,14 +305,15 @@ static void cleanup_staging(const char *staging_path)
         }
 
         // Wait briefly before retrying (files may be temporarily locked).
-        if (attempt < 3)
+        if (attempt < CLEANUP_MAX_RETRIES)
         {
             LOG_WARNING("Cleanup attempt %d failed, retrying...", attempt);
-            sleep(1);
+            sleep(CLEANUP_RETRY_DELAY_SECONDS);
         }
     }
 
-    LOG_WARNING("Failed to clean up staging directory after 3 attempts: %s", staging_path);
+    LOG_WARNING("Failed to clean up staging directory after %d attempts: %s",
+        CLEANUP_MAX_RETRIES, staging_path);
 }
 
 int create_iso(const char *rootfs_path, const char *output_path)

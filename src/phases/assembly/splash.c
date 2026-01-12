@@ -49,8 +49,8 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     // Define the Plymouth theme configuration.
     const char *theme_cfg =
         "[Plymouth Theme]\n"
-        "Name=LimeOS\n"
-        "Description=LimeOS boot splash\n"
+        "Name=" CONFIG_PLYMOUTH_DISPLAY_NAME "\n"
+        "Description=" CONFIG_PLYMOUTH_DESCRIPTION "\n"
         "ModuleName=script\n"
         "\n"
         "[script]\n"
@@ -105,7 +105,10 @@ int setup_splash(const char *rootfs_path, const char *logo_path)
     if (find_first_glob(initrd_pattern, initrd_src, sizeof(initrd_src)) == 0)
     {
         snprintf(initrd_dst, sizeof(initrd_dst), "%s/boot/initrd.img", rootfs_path);
-        copy_file(initrd_src, initrd_dst);
+        if (copy_file(initrd_src, initrd_dst) != 0)
+        {
+            LOG_WARNING("Failed to copy updated initrd");
+        }
     }
 
     LOG_INFO("Plymouth splash configured successfully");

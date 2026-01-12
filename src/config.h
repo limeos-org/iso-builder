@@ -10,6 +10,19 @@
 /** The path to the black background image for clean boot. */
 #define CONFIG_BLACK_PNG_PATH "./assets/black.png"
 
+/**
+ * The prefix for output ISO filenames.
+ *
+ * Example: "limeos" produces "limeos-1.0.0.iso".
+ */
+#define CONFIG_ISO_FILENAME_PREFIX "limeos"
+
+/** The directory to search for local component binaries before downloading. */
+#define CONFIG_LOCAL_BIN_DIR "./bin"
+
+/** The prefix for temporary build directories. */
+#define CONFIG_TMPDIR_PREFIX "/tmp/limeos-build-"
+
 // ---
 // Github Configuration
 // ---
@@ -22,6 +35,12 @@
 
 /** The GitHub API base URL for releases. */
 #define CONFIG_GITHUB_API_BASE "https://api.github.com/repos"
+
+/** The GitHub API version for request headers. */
+#define CONFIG_GITHUB_API_VERSION "2022-11-28"
+
+/** The filename for release checksums. */
+#define CONFIG_CHECKSUMS_FILENAME "SHA256SUMS"
 
 // ---
 // Boot Configuration
@@ -36,13 +55,8 @@
 /** The default initrd image path within the ISO. */
 #define CONFIG_BOOT_INITRD_PATH "/boot/initrd.img"
 
-/**
- * The size of the EFI boot image in megabytes.
- *
- * 4MB provides sufficient space for the GRUB EFI binary (~1MB) plus
- * headroom for FAT filesystem overhead and future additions.
- */
-#define CONFIG_EFI_IMAGE_SIZE_MB 4
+/** The GRUB menu entry name displayed during boot. */
+#define CONFIG_GRUB_MENU_ENTRY_NAME "LimeOS Installer"
 
 // ---
 // System Paths (Host Dependencies)
@@ -76,8 +90,30 @@
 /** The Plymouth theme name. */
 #define CONFIG_PLYMOUTH_THEME_NAME "limeos"
 
+/** The Plymouth theme display name shown in theme metadata. */
+#define CONFIG_PLYMOUTH_DISPLAY_NAME "LimeOS"
+
+/** The Plymouth theme description shown in theme metadata. */
+#define CONFIG_PLYMOUTH_DESCRIPTION "LimeOS boot splash"
+
 /** The Plymouth themes directory path (relative to rootfs). */
 #define CONFIG_PLYMOUTH_THEMES_DIR "/usr/share/plymouth/themes"
+
+// ---
+// OS Branding Configuration
+// ---
+
+/** The display name of the operating system. */
+#define CONFIG_OS_NAME "LimeOS"
+
+/** The lowercase identifier for the operating system. */
+#define CONFIG_OS_ID "limeos"
+
+/** The OS home page URL. */
+#define CONFIG_OS_HOME_URL "https://limeos.org"
+
+/** The ID of the upstream distribution this OS is based on. */
+#define CONFIG_OS_BASE_ID "debian"
 
 // ---
 // Root Filesystem Configuration
@@ -89,14 +125,66 @@
 /** The installation path for component binaries (relative to rootfs). */
 #define CONFIG_INSTALL_BIN_PATH "/usr/local/bin"
 
+/** The path where the payload tarball is stored in the carrier rootfs. */
+#define CONFIG_PAYLOAD_ROOTFS_PATH "/usr/share/limeos/rootfs.tar.gz"
+
+/**
+ * The directory where bundled .deb packages are stored in the carrier rootfs.
+ */
+#define CONFIG_PACKAGES_DIR "/usr/share/limeos/packages"
+
+/** The directory for BIOS-specific bootloader packages. */
+#define CONFIG_PACKAGES_BIOS_DIR CONFIG_PACKAGES_DIR "/bios"
+
+/** The directory for EFI-specific bootloader packages. */
+#define CONFIG_PACKAGES_EFI_DIR CONFIG_PACKAGES_DIR "/efi"
+
+/**
+ * Packages for the carrier rootfs (boots from ISO, runs installer).
+ * Minimal environment to run the installation wizard.
+ */
+#define CONFIG_CARRIER_PACKAGES \
+    "linux-image-amd64 systemd-sysv live-boot " \
+    "plymouth plymouth-themes " \
+    "libncurses6 parted dosfstools e2fsprogs"
+
+/**
+ * Packages for the payload rootfs (installed to disk).
+ * Full system with networking and user tools.
+ *
+ * Includes common grub dependencies that don't conflict between BIOS/EFI.
+ * The boot-mode-specific packages are bundled separately.
+ */
+#define CONFIG_PAYLOAD_PACKAGES \
+    "linux-image-amd64 systemd-sysv dbus " \
+    "libpam-systemd policykit-1 " \
+    "locales console-setup keyboard-configuration " \
+    "sudo network-manager " \
+    "grub2-common grub-common ucf sensible-utils " \
+    "libefiboot1 libefivar1 libfuse3-3 os-prober"
+
+/**
+ * BIOS-specific bootloader packages to bundle.
+ * These conflict with EFI packages and must be installed by the installer.
+ */
+#define CONFIG_BIOS_PACKAGES "grub-pc grub-pc-bin"
+
+/**
+ * EFI-specific bootloader packages to bundle.
+ * These conflict with BIOS packages and must be installed by the installer.
+ */
+#define CONFIG_EFI_PACKAGES "grub-efi-amd64 grub-efi-amd64-bin"
+
 // ---
 // Component Configuration
 // ---
 
-/** Component definition with repository and binary names. */
+/**
+ * A type representing a LimeOS component with its repository and binary names.
+ */
 typedef struct {
-    const char *repo_name;    // GitHub repository name
-    const char *binary_name;  // Installed binary name
+    const char *repo_name;
+    const char *binary_name;
 } Component;
 
 /** Required LimeOS components. */

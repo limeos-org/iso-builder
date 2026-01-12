@@ -21,13 +21,23 @@ int main(int argc, char *argv[])
     const char *version = NULL;
     char build_dir[COMMAND_PATH_MAX_LENGTH];
     char components_dir[COMMAND_PATH_MAX_LENGTH];
-    char rootfs_dir[COMMAND_PATH_MAX_LENGTH];
+    char base_rootfs_dir[COMMAND_PATH_MAX_LENGTH];
+    char payload_rootfs_dir[COMMAND_PATH_MAX_LENGTH];
+    char payload_tarball_path[COMMAND_PATH_MAX_LENGTH];
+    char carrier_rootfs_dir[COMMAND_PATH_MAX_LENGTH];
     int exit_code = 0;
 
     // Verify the program is running as root.
     if (geteuid() != 0)
     {
         LOG_ERROR("This program must be run as root");
+        return 1;
+    }
+
+    // Validate all required dependencies are available.
+    if (validate_dependencies() != 0)
+    {
+        LOG_ERROR("Missing dependencies, cannot continue");
         return 1;
     }
 
@@ -58,10 +68,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Extract the version from positional arguments.
+    // Extract and validate the version.
     version = argv[optind];
-
-    // Validate the version format.
     if (validate_version(version) != 0)
     {
         LOG_ERROR("Invalid version format: %s (expected: X.Y.Z or vX.Y.Z)", version);
@@ -75,112 +83,62 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // Install signal handlers for graceful shutdown.
+    install_signal_handlers(build_dir);
+
     // Construct derived paths.
     snprintf(components_dir, sizeof(components_dir), "%s/components", build_dir);
-    snprintf(rootfs_dir, sizeof(rootfs_dir), "%s/rootfs", build_dir);
+    snprintf(base_rootfs_dir, sizeof(base_rootfs_dir), "%s/base-rootfs", build_dir);
+    snprintf(payload_rootfs_dir, sizeof(payload_rootfs_dir), "%s/payload-rootfs", build_dir);
+    snprintf(payload_tarball_path, sizeof(payload_tarball_path), "%s/rootfs.tar.gz", build_dir);
+    snprintf(carrier_rootfs_dir, sizeof(carrier_rootfs_dir), "%s/carrier-rootfs", build_dir);
 
-    // Initialize the fetch module.
-    if (init_fetch() != 0)
-    {
-        LOG_ERROR("Failed to initialize fetch module");
-        rm_rf(build_dir);
-        return 1;
-    }
-
-    // Log the build operation.
     LOG_INFO("Building ISO for version %s", version);
 
-    // Fetch all required components.
-    if (fetch_all_components(version, components_dir) != 0)
+    // Phase 1: Preparation - fetch components from GitHub.
+    if (run_preparation_phase(version, components_dir) != 0)
     {
-        LOG_ERROR("Failed to fetch components");
-        cleanup_fetch();
-        rm_rf(build_dir);
-        return 1;
-    }
-
-    LOG_INFO("Phase 1 complete: Components fetched");
-
-    // Clean up the fetch module.
-    cleanup_fetch();
-
-    // Create the root filesystem.
-    if (create_rootfs(rootfs_dir) != 0)
-    {
-        LOG_ERROR("Failed to create rootfs");
         exit_code = 1;
         goto cleanup;
     }
+    if (check_interrupted()) return 130;
 
-    // Strip unnecessary files from the rootfs.
-    if (strip_rootfs(rootfs_dir) != 0)
+    // Phase 2: Base - create and strip base rootfs.
+    if (run_base_phase(base_rootfs_dir) != 0)
     {
-        LOG_ERROR("Failed to strip rootfs");
         exit_code = 1;
         goto cleanup;
     }
+    if (check_interrupted()) return 130;
 
-    // Install component binaries into the rootfs.
-    if (install_components(rootfs_dir, components_dir) != 0)
+    // Phase 3: Payload - copy base, install packages, brand, package.
+    if (run_payload_phase(base_rootfs_dir, payload_rootfs_dir, payload_tarball_path, version) != 0)
     {
-        LOG_ERROR("Failed to install components");
         exit_code = 1;
         goto cleanup;
     }
+    if (check_interrupted()) return 130;
 
-    // Configure the init system.
-    if (configure_init(rootfs_dir) != 0)
+    // Phase 4: Carrier - copy base, install packages, embed payload.
+    if (run_carrier_phase(base_rootfs_dir, carrier_rootfs_dir, payload_tarball_path, components_dir) != 0)
     {
-        LOG_ERROR("Failed to configure init");
         exit_code = 1;
         goto cleanup;
     }
+    if (check_interrupted()) return 130;
 
-    LOG_INFO("Phase 2 complete: Rootfs created");
+    // Base rootfs no longer needed after payload and carrier are created.
+    rm_rf(base_rootfs_dir);
 
-    // Configure GRUB for UEFI boot.
-    if (setup_grub(rootfs_dir) != 0)
+    // Phase 5: Assembly - configure bootloaders and create ISO.
+    if (run_assembly_phase(carrier_rootfs_dir, version) != 0)
     {
-        LOG_ERROR("Failed to configure GRUB");
         exit_code = 1;
         goto cleanup;
     }
-
-    // Configure isolinux for BIOS boot.
-    if (setup_isolinux(rootfs_dir) != 0)
-    {
-        LOG_ERROR("Failed to configure isolinux");
-        exit_code = 1;
-        goto cleanup;
-    }
-
-    // Configure Plymouth splash screen.
-    if (setup_splash(rootfs_dir, CONFIG_SPLASH_LOGO_PATH) != 0)
-    {
-        LOG_ERROR("Failed to configure splash screen");
-        exit_code = 1;
-        goto cleanup;
-    }
-
-    LOG_INFO("Phase 3 complete: Boot configured");
-
-    // Construct the ISO path with version in current directory.
-    char iso_output_path[256];
-    snprintf(iso_output_path, sizeof(iso_output_path), "limeos-%s.iso", version);
-
-    // Create the final ISO image.
-    if (create_iso(rootfs_dir, iso_output_path) != 0)
-    {
-        LOG_ERROR("Failed to create ISO image");
-        exit_code = 1;
-        goto cleanup;
-    }
-
-    LOG_INFO("Phase 4 complete: ISO assembled");
-    LOG_INFO("Build complete! ISO available at: %s", iso_output_path);
 
 cleanup:
-    // Clean up the secure build directory.
     rm_rf(build_dir);
+    clear_cleanup_dir();
     return exit_code;
 }

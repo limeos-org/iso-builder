@@ -7,7 +7,8 @@
  * Queries the GitHub API for the specified component repository and finds the
  * latest release that shares the same major version as the provided version.
  *
- * @param component The component name (repository name, e.g., "window-manager").
+ * @param component The component name (without `limeos` suffix, 
+ * e.g., "window-manager").
  * @param version The user-provided version (e.g., "1.0.0").
  * @param out_resolved The buffer to store the resolved version string.
  * @param buffer_length The size of the output buffer.

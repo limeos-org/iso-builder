@@ -72,9 +72,48 @@ int shell_quote_path(const char *path, char *out_quoted, size_t buffer_length)
     return shell_quote(path, out_quoted, buffer_length);
 }
 
+/** The maximum length for a single line of command output. */
+#define COMMAND_OUTPUT_LINE_MAX 4096
+
+/** ANSI escape code for gray (bright black) text. */
+#define ANSI_GRAY "\033[90m"
+
+/** ANSI escape code to reset text formatting. */
+#define ANSI_RESET "\033[0m"
+
 int run_command(const char *command)
 {
-    return system(command);
+    char line[COMMAND_OUTPUT_LINE_MAX];
+    char full_command[COMMAND_MAX_LENGTH];
+    FILE *pipe;
+    int status;
+
+    // Redirect stderr to stdout so we capture all output.
+    snprintf(full_command, sizeof(full_command), "%s 2>&1", command);
+
+    // Open a pipe to capture command output.
+    pipe = popen(full_command, "r");
+    if (pipe == NULL)
+    {
+        return -1;
+    }
+
+    // Print each line with gray color and gutter bar.
+    while (fgets(line, sizeof(line), pipe) != NULL)
+    {
+        printf(ANSI_GRAY "  | %s" ANSI_RESET, line);
+        fflush(stdout);
+    }
+
+    // Close the pipe and extract the exit status.
+    status = pclose(pipe);
+    if (status == -1)
+    {
+        return -1;
+    }
+
+    // Return the command's exit code.
+    return WEXITSTATUS(status);
 }
 
 int run_chroot(const char *rootfs_path, const char *command)
@@ -344,7 +383,7 @@ int find_first_glob(const char *pattern, char *out_path, size_t buffer_length)
 int create_secure_tmpdir(char *out_path, size_t buffer_length)
 {
     // Template for mkdtemp - X's will be replaced with unique characters.
-    char template[] = "/tmp/limeos-build-XXXXXX";
+    char template[] = CONFIG_TMPDIR_PREFIX "XXXXXX";
 
     // Validate buffer size.
     if (buffer_length < sizeof(template))
@@ -367,4 +406,246 @@ int create_secure_tmpdir(char *out_path, size_t buffer_length)
 
     LOG_INFO("Created secure build directory: %s", out_path);
     return 0;
+}
+
+int cleanup_apt_directories(const char *rootfs_path)
+{
+    char dir_path[COMMAND_PATH_MAX_LENGTH];
+
+    // Remove apt cache.
+    snprintf(dir_path, sizeof(dir_path), "%s/var/cache/apt", rootfs_path);
+    if (rm_rf(dir_path) != 0)
+    {
+        LOG_ERROR("Failed to remove apt cache");
+        return -1;
+    }
+
+    // Recreate apt cache directory.
+    if (mkdir_p(dir_path) != 0)
+    {
+        LOG_WARNING("Failed to recreate apt cache directory");
+    }
+
+    // Remove apt lists.
+    snprintf(dir_path, sizeof(dir_path), "%s/var/lib/apt/lists", rootfs_path);
+    if (rm_rf(dir_path) != 0)
+    {
+        LOG_ERROR("Failed to remove apt lists");
+        return -2;
+    }
+
+    // Recreate apt lists directory.
+    if (mkdir_p(dir_path) != 0)
+    {
+        LOG_WARNING("Failed to recreate apt lists directory");
+    }
+
+    return 0;
+}
+
+int copy_kernel_and_initrd(const char *rootfs_path)
+{
+    char pattern[COMMAND_PATH_MAX_LENGTH];
+    char src[COMMAND_PATH_MAX_LENGTH];
+    char dst[COMMAND_PATH_MAX_LENGTH];
+
+    // Copy kernel to standard path.
+    snprintf(pattern, sizeof(pattern), "%s/boot/vmlinuz-*", rootfs_path);
+    if (find_first_glob(pattern, src, sizeof(src)) != 0)
+    {
+        LOG_ERROR("Failed to find kernel");
+        return -1;
+    }
+    snprintf(dst, sizeof(dst), "%s/boot/vmlinuz", rootfs_path);
+    if (copy_file(src, dst) != 0)
+    {
+        LOG_ERROR("Failed to copy kernel");
+        return -1;
+    }
+
+    // Copy initrd to standard path.
+    snprintf(pattern, sizeof(pattern), "%s/boot/initrd.img-*", rootfs_path);
+    if (find_first_glob(pattern, src, sizeof(src)) != 0)
+    {
+        LOG_ERROR("Failed to find initrd");
+        return -2;
+    }
+    snprintf(dst, sizeof(dst), "%s/boot/initrd.img", rootfs_path);
+    if (copy_file(src, dst) != 0)
+    {
+        LOG_ERROR("Failed to copy initrd");
+        return -2;
+    }
+
+    return 0;
+}
+
+/** Firmware directories to remove (relative to /usr/lib/firmware). */
+static const char *FIRMWARE_TO_REMOVE[] = {
+    // WiFi firmware.
+    "iwlwifi",
+    "ath9k_htc",
+    "ath10k",
+    "ath11k",
+    "ath12k",
+    "rtlwifi",
+    "rtw88",
+    "rtw89",
+    "mediatek",
+    "mrvl",
+    // Bluetooth firmware.
+    "qca",
+    // Server/datacenter NICs (not needed for desktop).
+    "rtl_nic",
+    "cxgb4",
+    "liquidio",
+    "mellanox",
+    "netronome",
+    "dpaa2",
+    "bnx2",
+    "bnx2x",
+    // Audio DSP firmware.
+    "cirrus",
+};
+
+void cleanup_unnecessary_firmware(const char *rootfs_path)
+{
+    char fw_base[COMMAND_PATH_MAX_LENGTH];
+    char dir_path[COMMAND_PATH_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
+
+    snprintf(fw_base, sizeof(fw_base), "%s/usr/lib/firmware", rootfs_path);
+
+    // Remove firmware directories.
+    int count = sizeof(FIRMWARE_TO_REMOVE) / sizeof(FIRMWARE_TO_REMOVE[0]);
+    for (int i = 0; i < count; i++)
+    {
+        snprintf(dir_path, sizeof(dir_path), "%s/%s", fw_base, FIRMWARE_TO_REMOVE[i]);
+        rm_rf(dir_path);
+    }
+
+    // Remove Intel Bluetooth firmware (files matching *bt* in intel/).
+    snprintf(dir_path, sizeof(dir_path), "%s/intel", fw_base);
+    if (shell_quote_path(dir_path, quoted_path, sizeof(quoted_path)) == 0)
+    {
+        snprintf(command, sizeof(command),
+            "find %s -name '*bt*' -type f -delete 2>/dev/null", quoted_path);
+        run_command(command);
+    }
+
+    // Remove Intel Sound Open Firmware.
+    snprintf(dir_path, sizeof(dir_path), "%s/intel/sof", fw_base);
+    rm_rf(dir_path);
+    snprintf(dir_path, sizeof(dir_path), "%s/intel/sof-tplg", fw_base);
+    rm_rf(dir_path);
+
+    // Remove Broadcom Bluetooth firmware (.hcd files).
+    snprintf(dir_path, sizeof(dir_path), "%s/brcm", fw_base);
+    if (shell_quote_path(dir_path, quoted_path, sizeof(quoted_path)) == 0)
+    {
+        snprintf(command, sizeof(command),
+            "find %s -name '*.hcd' -type f -delete 2>/dev/null", quoted_path);
+        run_command(command);
+    }
+
+    // Remove Broadcom WiFi firmware (pcie/sdio files).
+    if (shell_quote_path(dir_path, quoted_path, sizeof(quoted_path)) == 0)
+    {
+        snprintf(command, sizeof(command),
+            "find %s \\( -name '*-pcie.*' -o -name '*-sdio.*' \\) -type f -delete 2>/dev/null",
+            quoted_path);
+        run_command(command);
+    }
+
+    // Also check /lib/firmware (legacy path).
+    snprintf(fw_base, sizeof(fw_base), "%s/lib/firmware", rootfs_path);
+    for (int i = 0; i < count; i++)
+    {
+        snprintf(dir_path, sizeof(dir_path), "%s/%s", fw_base, FIRMWARE_TO_REMOVE[i]);
+        rm_rf(dir_path);
+    }
+}
+
+void blacklist_wireless_modules(const char *rootfs_path)
+{
+    char dir_path[COMMAND_PATH_MAX_LENGTH];
+    char file_path[COMMAND_PATH_MAX_LENGTH];
+
+    // Create modprobe.d directory if it doesn't exist.
+    snprintf(dir_path, sizeof(dir_path), "%s/etc/modprobe.d", rootfs_path);
+    if (mkdir_p(dir_path) != 0)
+    {
+        LOG_WARNING("Failed to create /etc/modprobe.d");
+        return;
+    }
+
+    // Blacklist wireless and bluetooth modules since we removed their firmware.
+    const char *content =
+        "# Blacklist wireless modules (firmware removed)\n"
+        "blacklist iwlwifi\n"
+        "blacklist iwlmvm\n"
+        "blacklist iwldvm\n"
+        "blacklist ath9k\n"
+        "blacklist ath9k_htc\n"
+        "blacklist ath10k_pci\n"
+        "blacklist ath10k_core\n"
+        "blacklist ath11k\n"
+        "blacklist ath11k_pci\n"
+        "blacklist rtlwifi\n"
+        "blacklist rtl8192ce\n"
+        "blacklist rtl8192cu\n"
+        "blacklist rtl8192de\n"
+        "blacklist rtl8192se\n"
+        "blacklist rtl8723ae\n"
+        "blacklist rtl8723be\n"
+        "blacklist rtw88_pci\n"
+        "blacklist rtw89_pci\n"
+        "blacklist brcmfmac\n"
+        "blacklist brcmsmac\n"
+        "blacklist mwifiex\n"
+        "blacklist mwifiex_pcie\n"
+        "\n"
+        "# Blacklist bluetooth modules (firmware removed)\n"
+        "blacklist btusb\n"
+        "blacklist btrtl\n"
+        "blacklist btbcm\n"
+        "blacklist btintel\n"
+        "blacklist bluetooth\n";
+
+    snprintf(file_path, sizeof(file_path), "%s/blacklist-wireless.conf", dir_path);
+    if (write_file(file_path, content) != 0)
+    {
+        LOG_WARNING("Failed to write module blacklist");
+    }
+}
+
+void mask_rfkill_service(const char *rootfs_path)
+{
+    char dir_path[COMMAND_PATH_MAX_LENGTH];
+    char mask_path[COMMAND_PATH_MAX_LENGTH];
+
+    // Create systemd system directory if needed.
+    snprintf(dir_path, sizeof(dir_path), "%s/etc/systemd/system", rootfs_path);
+    if (mkdir_p(dir_path) != 0)
+    {
+        LOG_WARNING("Failed to create systemd system directory");
+        return;
+    }
+
+    // Mask rfkill service (no RF devices to manage).
+    snprintf(mask_path, sizeof(mask_path),
+        "%s/systemd-rfkill.service", dir_path);
+    if (symlink_file("/dev/null", mask_path) != 0)
+    {
+        LOG_WARNING("Failed to mask systemd-rfkill.service");
+    }
+
+    // Mask rfkill socket.
+    snprintf(mask_path, sizeof(mask_path),
+        "%s/systemd-rfkill.socket", dir_path);
+    if (symlink_file("/dev/null", mask_path) != 0)
+    {
+        LOG_WARNING("Failed to mask systemd-rfkill.socket");
+    }
 }

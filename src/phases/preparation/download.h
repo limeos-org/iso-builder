@@ -3,6 +3,9 @@
 /** The maximum length for URL strings. */
 #define FETCH_URL_MAX_LENGTH 512
 
+/** Network timeout in seconds for curl operations. */
+#define FETCH_TIMEOUT_SECONDS 60
+
 /**
  * Initializes the fetch module.
  *
