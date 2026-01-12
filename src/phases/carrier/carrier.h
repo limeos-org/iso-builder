@@ -11,6 +11,7 @@
  * @param rootfs_dir The directory for the carrier rootfs.
  * @param tarball_path The path to the payload tarball to embed.
  * @param components_dir The directory containing downloaded components.
+ * @param version The version string for OS branding.
  *
  * @return - `0` - Indicates success.
  * @return - `-1` - Indicates failure.
@@ -19,5 +20,6 @@ int run_carrier_phase(
     const char *base_rootfs_dir,
     const char *rootfs_dir,
     const char *tarball_path,
-    const char *components_dir
+    const char *components_dir,
+    const char *version
 );

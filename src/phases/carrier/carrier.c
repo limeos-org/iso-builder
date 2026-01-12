@@ -8,12 +8,19 @@ int run_carrier_phase(
     const char *base_rootfs_dir,
     const char *rootfs_dir,
     const char *tarball_path,
-    const char *components_dir
+    const char *components_dir,
+    const char *version
 )
 {
     if (create_carrier_rootfs(base_rootfs_dir, rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to create carrier rootfs");
+        return -1;
+    }
+
+    if (brand_carrier_rootfs(rootfs_dir, version) != 0)
+    {
+        LOG_ERROR("Failed to brand carrier rootfs");
         return -1;
     }
 
@@ -41,7 +48,6 @@ int run_carrier_phase(
         return -1;
     }
 
-    // Clean up apt cache after all packages are installed.
     if (cleanup_apt_directories(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to cleanup apt directories");

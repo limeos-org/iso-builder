@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     if (check_interrupted()) return 130;
 
     // Phase 4: Carrier - copy base, install packages, embed payload.
-    if (run_carrier_phase(base_rootfs_dir, carrier_rootfs_dir, payload_tarball_path, components_dir) != 0)
+    if (run_carrier_phase(base_rootfs_dir, carrier_rootfs_dir, payload_tarball_path, components_dir, version) != 0)
     {
         exit_code = 1;
         goto cleanup;

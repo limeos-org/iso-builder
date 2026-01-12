@@ -60,6 +60,16 @@ int strip_base_rootfs(const char *path)
     // Mask rfkill service since there's no RF hardware to manage.
     mask_rfkill_service(path);
 
+    // Clear MOTD files that display Debian messages on login.
+    snprintf(dir_path, sizeof(dir_path), "%s/etc/motd", path);
+    if (write_file(dir_path, "") != 0)
+    {
+        LOG_ERROR("Failed to clear /etc/motd");
+        return -3;
+    }
+    snprintf(dir_path, sizeof(dir_path), "%s/etc/update-motd.d", path);
+    rm_rf(dir_path);  // OK if it doesn't exist
+
     // NOTE: Do NOT cleanup apt directories here. The payload and carrier
     // phases need apt to install packages after copying from base.
 

@@ -2,7 +2,9 @@ CC = clang
 CFLAGS = -Wall -Wextra -g
 LIBS = -lcurl -ljson-c -lcrypto
 
+# ---
 # Build Configuration
+# ---
 
 SRCDIR = src
 OBJDIR = obj
@@ -29,6 +31,8 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 clean:
 	rm -rf $(OBJDIR) $(TARGET)
 
+# ---
 # Special Directives
+# ---
 
 .PHONY: all clean

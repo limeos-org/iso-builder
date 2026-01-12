@@ -1,17 +1,17 @@
 /**
- * This code is responsible for configuring the Plymouth splash screen.
+ * This code configures the Plymouth boot splash screen.
  */
 
 #include "all.h"
 
-int setup_splash(const char *rootfs_path, const char *logo_path)
+int brand_splash(const char *rootfs_path, const char *logo_path)
 {
     char theme_dir[COMMAND_PATH_MAX_LENGTH];
     char theme_file_path[COMMAND_PATH_MAX_LENGTH];
     char splash_dest[COMMAND_PATH_MAX_LENGTH];
     char theme_cmd[COMMAND_PATH_MAX_LENGTH];
 
-    LOG_INFO("Configuring Plymouth splash screen");
+    LOG_INFO("Configuring Plymouth splash screen...");
 
     // Verify the logo file exists.
     if (!file_exists(logo_path))

@@ -14,5 +14,7 @@
  * @return - `0` - Indicates success.
  * @return - `-1` - Indicates failure.
  */
-int run_payload_phase(const char *base_rootfs_dir, const char *rootfs_dir,
-                      const char *tarball_path, const char *version);
+int run_payload_phase(
+    const char *base_rootfs_dir, const char *rootfs_dir,
+    const char *tarball_path, const char *version
+);

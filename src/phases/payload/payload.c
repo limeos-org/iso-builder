@@ -27,12 +27,6 @@ int run_payload_phase(
         return -1;
     }
 
-    if (setup_splash(rootfs_dir, CONFIG_SPLASH_LOGO_PATH) != 0)
-    {
-        LOG_ERROR("Failed to configure splash screen");
-        return -1;
-    }
-
     // Remove firmware that may have been reinstalled by linux-image package.
     cleanup_unnecessary_firmware(rootfs_dir);
 

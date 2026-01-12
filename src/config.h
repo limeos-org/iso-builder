@@ -156,7 +156,8 @@
  * The boot-mode-specific packages are bundled separately.
  */
 #define CONFIG_PAYLOAD_PACKAGES \
-    "linux-image-amd64 systemd-sysv dbus " \
+    "linux-image-amd64 systemd systemd-sysv dbus " \
+    "plymouth plymouth-themes " \
     "libpam-systemd policykit-1 " \
     "locales console-setup keyboard-configuration " \
     "sudo network-manager " \

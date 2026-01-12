@@ -24,12 +24,6 @@ int run_assembly_phase(const char *rootfs_dir, const char *version)
         return -1;
     }
 
-    if (setup_splash(rootfs_dir, CONFIG_SPLASH_LOGO_PATH) != 0)
-    {
-        LOG_ERROR("Failed to configure splash screen");
-        return -1;
-    }
-
     LOG_INFO("Boot configuration complete");
 
     // Assemble final ISO image.
