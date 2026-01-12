@@ -156,6 +156,10 @@ If you want to use local LimeOS component binaries (e.g.,
 place them in `./bin`. The ISO builder will automatically detect and prefer them
 over downloads, as long as the filenames match the expected names.
 
+The ISO builder caches the base rootfs at `~/.cache/limeos/` to speed up
+subsequent builds. To force a fresh build without using the cache, use the
+`--no-cache` flag.
+
 ### Testing the ISO builder
 
 This subsection explains how to run the unit test suite.
