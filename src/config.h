@@ -13,6 +13,9 @@
 /** The filename for the cached payload rootfs tarball. */
 #define CONFIG_CACHE_PAYLOAD_ROOTFS_FILENAME "payload-rootfs.tar.gz"
 
+/** The filename for the cached carrier rootfs tarball. */
+#define CONFIG_CACHE_CARRIER_ROOTFS_FILENAME "carrier-rootfs.tar.gz"
+
 /** The directory name for the shared apt cache. */
 #define CONFIG_CACHE_APT_DIR "apt-cache"
 

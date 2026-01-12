@@ -110,3 +110,36 @@ int save_payload_rootfs_to_cache(const char *rootfs_path, const char *cache_dir)
  * @return - `-1` - Indicates failure.
  */
 int restore_payload_rootfs_from_cache(const char *cache_dir, const char *rootfs_path);
+
+
+/**
+ * Checks if a cached carrier rootfs exists.
+ *
+ * @param cache_dir The path to the cache directory.
+ *
+ * @return - `1` - Indicates cached rootfs exists.
+ * @return - `0` - Indicates no cached rootfs.
+ */
+int has_cached_carrier_rootfs(const char *cache_dir);
+
+/**
+ * Saves the carrier rootfs to the cache as a tarball.
+ *
+ * @param rootfs_path The path to the rootfs directory to cache.
+ * @param cache_dir The path to the cache directory.
+ *
+ * @return - `0` - Indicates success.
+ * @return - `-1` - Indicates failure.
+ */
+int save_carrier_rootfs_to_cache(const char *rootfs_path, const char *cache_dir);
+
+/**
+ * Restores the carrier rootfs from the cache.
+ *
+ * @param cache_dir The path to the cache directory.
+ * @param rootfs_path The path where the rootfs should be extracted.
+ *
+ * @return - `0` - Indicates success.
+ * @return - `-1` - Indicates failure.
+ */
+int restore_carrier_rootfs_from_cache(const char *cache_dir, const char *rootfs_path);

@@ -312,3 +312,99 @@ int restore_payload_rootfs_from_cache(const char *cache_dir, const char *rootfs_
     LOG_INFO("Payload rootfs restored from cache");
     return 0;
 }
+
+
+int has_cached_carrier_rootfs(const char *cache_dir)
+{
+    char tarball_path[COMMAND_PATH_MAX_LENGTH];
+
+    snprintf(tarball_path, sizeof(tarball_path), "%s/%s",
+        cache_dir, CONFIG_CACHE_CARRIER_ROOTFS_FILENAME);
+
+    return file_exists(tarball_path);
+}
+
+int save_carrier_rootfs_to_cache(const char *rootfs_path, const char *cache_dir)
+{
+    char tarball_path[COMMAND_PATH_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_tarball[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
+
+    snprintf(tarball_path, sizeof(tarball_path), "%s/%s",
+        cache_dir, CONFIG_CACHE_CARRIER_ROOTFS_FILENAME);
+
+    LOG_INFO("Caching carrier rootfs to %s", tarball_path);
+
+    // Quote paths for shell safety.
+    if (shell_quote_path(tarball_path, quoted_tarball, sizeof(quoted_tarball)) != 0)
+    {
+        LOG_ERROR("Failed to quote tarball path");
+        return -1;
+    }
+    if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
+    {
+        LOG_ERROR("Failed to quote rootfs path");
+        return -1;
+    }
+
+    // Create tarball of the rootfs.
+    snprintf(command, sizeof(command),
+        "tar -czf %s -C %s .",
+        quoted_tarball, quoted_rootfs);
+
+    if (run_command(command) != 0)
+    {
+        LOG_ERROR("Failed to create carrier rootfs cache tarball");
+        return -1;
+    }
+
+    LOG_INFO("Carrier rootfs cached successfully");
+    return 0;
+}
+
+int restore_carrier_rootfs_from_cache(const char *cache_dir, const char *rootfs_path)
+{
+    char tarball_path[COMMAND_PATH_MAX_LENGTH];
+    char command[COMMAND_MAX_LENGTH];
+    char quoted_tarball[COMMAND_QUOTED_MAX_LENGTH];
+    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
+
+    snprintf(tarball_path, sizeof(tarball_path), "%s/%s",
+        cache_dir, CONFIG_CACHE_CARRIER_ROOTFS_FILENAME);
+
+    LOG_INFO("Restoring carrier rootfs from cache");
+
+    // Quote paths for shell safety.
+    if (shell_quote_path(tarball_path, quoted_tarball, sizeof(quoted_tarball)) != 0)
+    {
+        LOG_ERROR("Failed to quote tarball path");
+        return -1;
+    }
+    if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
+    {
+        LOG_ERROR("Failed to quote rootfs path");
+        return -1;
+    }
+
+    // Create the target directory.
+    if (mkdir_p(rootfs_path) != 0)
+    {
+        LOG_ERROR("Failed to create rootfs directory");
+        return -1;
+    }
+
+    // Extract the cached tarball.
+    snprintf(command, sizeof(command),
+        "tar -xzf %s -C %s",
+        quoted_tarball, quoted_rootfs);
+
+    if (run_command(command) != 0)
+    {
+        LOG_ERROR("Failed to extract carrier rootfs cache");
+        return -1;
+    }
+
+    LOG_INFO("Carrier rootfs restored from cache");
+    return 0;
+}
