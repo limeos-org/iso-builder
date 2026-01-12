@@ -5,7 +5,7 @@
  *
  * Removes unnecessary firmware (WiFi, Bluetooth, server NICs), documentation,
  * and non-English locales. Preserves GPU firmware for Plymouth and CPU
- * microcode for system stability. Does NOT clean apt cache since payload
+ * microcode for system stability. Does NOT clean apt cache since target
  * and carrier phases need to install packages after copying from base.
  *
  * @param path The path to the base rootfs directory.

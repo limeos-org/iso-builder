@@ -125,8 +125,8 @@
 /** The installation path for component binaries (relative to rootfs). */
 #define CONFIG_INSTALL_BIN_PATH "/usr/local/bin"
 
-/** The path where the payload tarball is stored in the carrier rootfs. */
-#define CONFIG_PAYLOAD_ROOTFS_PATH "/usr/share/limeos/rootfs.tar.gz"
+/** The path where the target tarball is stored in the carrier rootfs. */
+#define CONFIG_TARGET_ROOTFS_PATH "/usr/share/limeos/rootfs.tar.gz"
 
 /**
  * The directory where bundled .deb packages are stored in the carrier rootfs.
@@ -149,13 +149,13 @@
     "libncurses6 parted dosfstools e2fsprogs"
 
 /**
- * Packages for the payload rootfs (installed to disk).
+ * Packages for the target rootfs (installed to disk).
  * Full system with networking and user tools.
  *
  * Includes common grub dependencies that don't conflict between BIOS/EFI.
  * The boot-mode-specific packages are bundled separately.
  */
-#define CONFIG_PAYLOAD_PACKAGES \
+#define CONFIG_TARGET_PACKAGES \
     "linux-image-amd64 systemd systemd-sysv dbus " \
     "plymouth plymouth-themes " \
     "libpam-systemd policykit-1 " \

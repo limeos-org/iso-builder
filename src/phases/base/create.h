@@ -3,7 +3,7 @@
 /**
  * Creates a minimal base rootfs using debootstrap.
  *
- * This creates the foundation that both payload and carrier rootfs will
+ * This creates the foundation that both target and carrier rootfs will
  * be copied from. Only runs debootstrap and apt-get update, no packages.
  *
  * @param path The path to create the base rootfs.

@@ -1,5 +1,5 @@
 /**
- * This code is responsible for system setup in the payload rootfs.
+ * This code is responsible for system setup in the target rootfs.
  *
  * Handles user creation and other initialization tasks that aren't
  * related to branding or package installation.

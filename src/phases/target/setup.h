@@ -6,7 +6,7 @@
  *
  * Creates user "user" with password "password" and sudo access.
  *
- * @param rootfs_path The path to the payload rootfs directory.
+ * @param rootfs_path The path to the target rootfs directory.
  *
  * @return - `0` - Indicates success.
  * @return - `-1` - Indicates failure.

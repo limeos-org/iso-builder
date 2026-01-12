@@ -1,6 +1,6 @@
 /**
  * This code is responsible for aggressively stripping unnecessary files
- * from the base rootfs to minimize size for both payload and carrier.
+ * from the base rootfs to minimize size for both target and carrier.
  */
 
 #include "all.h"
@@ -70,7 +70,7 @@ int strip_base_rootfs(const char *path)
     snprintf(dir_path, sizeof(dir_path), "%s/etc/update-motd.d", path);
     rm_rf(dir_path);  // OK if it doesn't exist
 
-    // NOTE: Do NOT cleanup apt directories here. The payload and carrier
+    // NOTE: Do NOT cleanup apt directories here. The target and carrier
     // phases need apt to install packages after copying from base.
 
     LOG_INFO("Base rootfs stripped successfully");

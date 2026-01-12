@@ -1,16 +1,16 @@
 /**
- * This code is responsible for packaging the payload rootfs into a tarball.
+ * This code is responsible for packaging the target rootfs into a tarball.
  */
 
 #include "all.h"
 
-int package_payload_rootfs(const char *rootfs_path, const char *output_path)
+int package_target_rootfs(const char *rootfs_path, const char *output_path)
 {
     char command[COMMAND_MAX_LENGTH];
     char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
     char quoted_output[COMMAND_QUOTED_MAX_LENGTH];
 
-    LOG_INFO("Packaging payload rootfs to %s", output_path);
+    LOG_INFO("Packaging target rootfs to %s", output_path);
 
     // Quote paths to prevent shell injection.
     if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
@@ -38,7 +38,7 @@ int package_payload_rootfs(const char *rootfs_path, const char *output_path)
         return -1;
     }
 
-    LOG_INFO("Payload rootfs packaged successfully");
+    LOG_INFO("Target rootfs packaged successfully");
 
     return 0;
 }

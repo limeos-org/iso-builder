@@ -1,9 +1,9 @@
 #pragma once
 
 /**
- * Creates the payload rootfs by copying from base and installing packages.
+ * Creates the target rootfs by copying from base and installing packages.
  *
- * The payload rootfs is the full system that gets installed to disk. It
+ * The target rootfs is the full system that gets installed to disk. It
  * includes bootloaders, networking, and other packages needed for a
  * functional system.
  *
@@ -14,4 +14,4 @@
  * @return - `-1` - Indicates copy failure.
  * @return - `-2` - Indicates package installation failure.
  */
-int create_payload_rootfs(const char *base_path, const char *path);
+int create_target_rootfs(const char *base_path, const char *path);

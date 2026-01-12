@@ -1,15 +1,15 @@
 /**
- * This code orchestrates payload-specific branding.
+ * This code orchestrates target-specific branding.
  *
- * Combines shared branding (identity, splash) with payload-specific
+ * Combines shared branding (identity, splash) with target-specific
  * GRUB configuration for the installed system.
  */
 
 #include "all.h"
 
-int brand_payload_rootfs(const char *path, const char *version)
+int brand_target_rootfs(const char *path, const char *version)
 {
-    LOG_INFO("Applying payload branding...");
+    LOG_INFO("Applying target branding...");
 
     if (brand_os_identity(path, version) != 0)
     {
@@ -26,7 +26,7 @@ int brand_payload_rootfs(const char *path, const char *version)
         return -3;
     }
 
-    LOG_INFO("Payload branding applied successfully");
+    LOG_INFO("Target branding applied successfully");
 
     return 0;
 }

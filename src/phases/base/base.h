@@ -4,7 +4,7 @@
  * Runs the base phase.
  *
  * Creates a minimal, stripped rootfs that serves as the foundation for
- * both the payload (installed system) and carrier (live installer) rootfs.
+ * both the target (installed system) and carrier (live installer) rootfs.
  * Running debootstrap once and copying saves significant build time.
  *
  * @param rootfs_dir The directory for the base rootfs.

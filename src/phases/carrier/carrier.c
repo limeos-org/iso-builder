@@ -24,9 +24,9 @@ int run_carrier_phase(
         return -1;
     }
 
-    if (embed_payload_rootfs(rootfs_dir, tarball_path) != 0)
+    if (embed_target_rootfs(rootfs_dir, tarball_path) != 0)
     {
-        LOG_ERROR("Failed to embed payload rootfs");
+        LOG_ERROR("Failed to embed target rootfs");
         return -1;
     }
 

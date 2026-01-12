@@ -1,17 +1,17 @@
 /**
- * This code is responsible for creating the payload rootfs by copying
- * from the base rootfs and installing payload-specific packages.
+ * This code is responsible for creating the target rootfs by copying
+ * from the base rootfs and installing target-specific packages.
  */
 
 #include "all.h"
 
-int create_payload_rootfs(const char *base_path, const char *path)
+int create_target_rootfs(const char *base_path, const char *path)
 {
     char command[COMMAND_MAX_LENGTH];
     char quoted_base[COMMAND_QUOTED_MAX_LENGTH];
     char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
 
-    LOG_INFO("Creating payload rootfs at %s", path);
+    LOG_INFO("Creating target rootfs at %s", path);
 
     // Quote paths to prevent shell injection.
     if (shell_quote_path(base_path, quoted_base, sizeof(quoted_base)) != 0)
@@ -34,19 +34,19 @@ int create_payload_rootfs(const char *base_path, const char *path)
         return -1;
     }
 
-    // Install payload-specific packages.
+    // Install target-specific packages.
     // DEBIAN_FRONTEND=noninteractive prevents prompts from locales,
     // console-setup, and keyboard-configuration packages.
-    LOG_INFO("Installing payload system packages...");
+    LOG_INFO("Installing target system packages...");
     if (run_chroot(path,
         "DEBIAN_FRONTEND=noninteractive "
-        "apt-get install -y --no-install-recommends " CONFIG_PAYLOAD_PACKAGES) != 0)
+        "apt-get install -y --no-install-recommends " CONFIG_TARGET_PACKAGES) != 0)
     {
         LOG_ERROR("Failed to install required packages");
         return -2;
     }
 
-    LOG_INFO("Payload rootfs created successfully");
+    LOG_INFO("Target rootfs created successfully");
 
     return 0;
 }
