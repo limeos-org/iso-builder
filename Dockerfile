@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     xorriso \
     grub-pc-bin \
     debootstrap \
+    dosfstools \
     isolinux \
     squashfs-tools \
     libcurl4-openssl-dev \
@@ -32,4 +33,4 @@ COPY . .
 RUN make clean && make
 
 # Default command
-CMD ["/app/bin/limeos-iso-builder"]
+CMD ["/app/bin/limeos-iso-builder", "1.0.0"]
