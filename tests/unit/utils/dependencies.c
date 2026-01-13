@@ -19,8 +19,6 @@ static int teardown(void **state)
     return 0;
 }
 
-// --- is_command_available tests ---
-
 /** Verifies is_command_available() finds the test binary itself. */
 static void test_is_command_available_test_binary(void **state)
 {
@@ -44,14 +42,9 @@ static void test_is_command_available_empty(void **state)
 {
     (void)state;
 
-    // Empty string should ideally return 0, but current implementation
-    // returns 1 because empty + PATH dir = valid directory path.
-    // This test documents the current behavior.
+    // Empty string is not a valid command name.
     int result = is_command_available("");
-
-    // Assert the actual behavior (1) to document it.
-    // TODO: Fix is_command_available() to reject empty strings.
-    assert_int_equal(1, result);
+    assert_int_equal(0, result);
 }
 
 /** Verifies is_command_available() returns 0 for absolute paths. */
@@ -63,16 +56,14 @@ static void test_is_command_available_with_slash(void **state)
     assert_int_equal(0, is_command_available("/bin/true"));
 }
 
-/** Verifies is_command_available() handles path traversal without crashing. */
+/** Verifies is_command_available() rejects path traversal attempts. */
 static void test_is_command_available_path_traversal(void **state)
 {
     (void)state;
 
-    // Path traversal behavior depends on PATH contents.
-    // Assert it returns a valid boolean (0 or 1) without crashing.
-    int result = is_command_available("../../../bin/true");
-
-    assert_true(result == 0 || result == 1);
+    // Path traversal should not find commands - only bare command names
+    // should be looked up in PATH directories.
+    assert_int_equal(0, is_command_available("../../../bin/true"));
 }
 
 int main(void)

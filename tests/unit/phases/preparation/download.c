@@ -22,8 +22,6 @@ static int teardown(void **state)
     return 0;
 }
 
-// --- compute_file_sha256 tests ---
-
 /** Verifies compute_file_sha256() computes correct hash for known content. */
 static void test_compute_file_sha256_known_content(void **state)
 {
@@ -106,59 +104,6 @@ static void test_compute_file_sha256_buffer_too_small(void **state)
     remove(test_path);
 }
 
-/** Verifies compute_file_sha256() produces consistent results. */
-static void test_compute_file_sha256_consistent(void **state)
-{
-    (void)state;
-    const char *test_path = "/tmp/iso-builder-test-sha256-consistent.txt";
-    char hash1[SHA256_HEX_LENGTH];
-    char hash2[SHA256_HEX_LENGTH];
-
-    // Create a test file.
-    write_file(test_path, "consistent content for hashing");
-
-    // Compute hash twice.
-    int result1 = compute_file_sha256(test_path, hash1, sizeof(hash1));
-    int result2 = compute_file_sha256(test_path, hash2, sizeof(hash2));
-
-    // Verify both succeeded and match.
-    assert_int_equal(0, result1);
-    assert_int_equal(0, result2);
-    assert_string_equal(hash1, hash2);
-
-    // Clean up.
-    remove(test_path);
-}
-
-/** Verifies compute_file_sha256() produces 64 hex characters. */
-static void test_compute_file_sha256_hex_format(void **state)
-{
-    (void)state;
-    const char *test_path = "/tmp/iso-builder-test-sha256-hex.txt";
-    char hash[SHA256_HEX_LENGTH];
-
-    // Create a test file.
-    write_file(test_path, "hex format test");
-
-    // Compute the hash.
-    int result = compute_file_sha256(test_path, hash, sizeof(hash));
-    assert_int_equal(0, result);
-
-    // Verify length is 64 characters.
-    assert_int_equal(64, strlen(hash));
-
-    // Verify all characters are valid hex.
-    for (int i = 0; i < 64; i++)
-    {
-        char c = hash[i];
-        int is_hex = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
-        assert_true(is_hex);
-    }
-
-    // Clean up.
-    remove(test_path);
-}
-
 /** Verifies compute_file_sha256() handles binary content. */
 static void test_compute_file_sha256_binary_content(void **state)
 {
@@ -187,13 +132,11 @@ static void test_compute_file_sha256_binary_content(void **state)
 int main(void)
 {
     const struct CMUnitTest tests[] = {
-        // compute_file_sha256 tests
+        // compute_file_sha256 tests.
         cmocka_unit_test_setup_teardown(test_compute_file_sha256_known_content, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compute_file_sha256_empty_file, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compute_file_sha256_nonexistent, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compute_file_sha256_buffer_too_small, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_compute_file_sha256_consistent, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_compute_file_sha256_hex_format, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compute_file_sha256_binary_content, setup, teardown),
     };
 

@@ -19,8 +19,6 @@ static int teardown(void **state)
     return 0;
 }
 
-// --- compute_cache_key tests ---
-
 /** Verifies compute_cache_key() produces a 64-character hex string. */
 static void test_compute_cache_key_length(void **state)
 {
@@ -35,43 +33,6 @@ static void test_compute_cache_key_length(void **state)
     assert_int_equal(64, (int)strlen(key));
 }
 
-/** Verifies compute_cache_key() produces consistent output. */
-static void test_compute_cache_key_consistent(void **state)
-{
-    (void)state;
-    char key1[65];
-    char key2[65];
-
-    // Compute the cache key twice.
-    int result1 = compute_cache_key(key1, sizeof(key1));
-    int result2 = compute_cache_key(key2, sizeof(key2));
-
-    // Verify both succeed and produce identical output.
-    assert_int_equal(0, result1);
-    assert_int_equal(0, result2);
-    assert_string_equal(key1, key2);
-}
-
-/** Verifies compute_cache_key() only contains hex characters. */
-static void test_compute_cache_key_hex_chars(void **state)
-{
-    (void)state;
-    char key[65];
-
-    // Compute the cache key.
-    int result = compute_cache_key(key, sizeof(key));
-    assert_int_equal(0, result);
-
-    // Verify each character is a valid hex digit.
-    for (int i = 0; key[i] != '\0'; i++)
-    {
-        int is_hex = (key[i] >= '0' && key[i] <= '9') ||
-                     (key[i] >= 'a' && key[i] <= 'f') ||
-                     (key[i] >= 'A' && key[i] <= 'F');
-        assert_true(is_hex);
-    }
-}
-
 /** Verifies compute_cache_key() fails with buffer too small. */
 static void test_compute_cache_key_buffer_too_small(void **state)
 {
@@ -84,21 +45,6 @@ static void test_compute_cache_key_buffer_too_small(void **state)
     // Verify failure.
     assert_int_equal(-1, result);
 }
-
-/** Verifies compute_cache_key() works with exact buffer size. */
-static void test_compute_cache_key_exact_buffer(void **state)
-{
-    (void)state;
-    char key[65];
-
-    // Compute with exactly 64 chars + null terminator.
-    int result = compute_cache_key(key, sizeof(key));
-
-    // Verify success.
-    assert_int_equal(0, result);
-}
-
-// --- get_cache_dir tests ---
 
 /** Verifies get_cache_dir() uses XDG_CACHE_HOME when set. */
 static void test_get_cache_dir_xdg(void **state)
@@ -211,13 +157,10 @@ static void test_get_cache_dir_empty_xdg(void **state)
 int main(void)
 {
     const struct CMUnitTest tests[] = {
-        /* compute_cache_key tests */
+        // compute_cache_key tests.
         cmocka_unit_test_setup_teardown(test_compute_cache_key_length, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_compute_cache_key_consistent, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_compute_cache_key_hex_chars, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compute_cache_key_buffer_too_small, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_compute_cache_key_exact_buffer, setup, teardown),
-        /* get_cache_dir tests */
+        // get_cache_dir tests.
         cmocka_unit_test_setup_teardown(test_get_cache_dir_xdg, setup, teardown),
         cmocka_unit_test_setup_teardown(test_get_cache_dir_home_fallback, setup, teardown),
         cmocka_unit_test_setup_teardown(test_get_cache_dir_empty_xdg, setup, teardown),

@@ -19,8 +19,6 @@ static int teardown(void **state)
     return 0;
 }
 
-// --- shell_quote tests ---
-
 /** Verifies shell_quote() wraps simple string in single quotes. */
 static void test_shell_quote_simple(void **state)
 {
@@ -174,8 +172,8 @@ static void test_file_exists_existing(void **state)
 {
     (void)state;
 
-    // Use the test binary itself as a guaranteed existing file.
-    assert_int_equal(1, file_exists("./bin/tests/utils/command"));
+    // Use /bin/sh which is POSIX-required and universally available.
+    assert_int_equal(1, file_exists("/bin/sh"));
 }
 
 /** Verifies file_exists() returns 0 for non-existing file. */
@@ -346,15 +344,24 @@ static void test_find_first_glob_finds_match(void **state)
 {
     (void)state;
     char result[256];
+    const char *test_dir = "/tmp/iso-builder-test-glob-dir";
+    const char *test_file = "/tmp/iso-builder-test-glob-dir/testfile.xyz";
 
-    // Find any .c file in tests directory.
-    int ret = find_first_glob("./tests/unit/utils/*.c", result, sizeof(result));
+    // Create a temp directory and file for testing.
+    mkdir_p(test_dir);
+    write_file(test_file, "test");
+
+    // Find any .xyz file in the test directory.
+    int ret = find_first_glob("/tmp/iso-builder-test-glob-dir/*.xyz", result, sizeof(result));
     assert_int_equal(0, ret);
 
-    // Verify result ends with .c.
+    // Verify result ends with .xyz.
     size_t len = strlen(result);
-    assert_true(len > 2);
-    assert_string_equal(".c", result + len - 2);
+    assert_true(len > 4);
+    assert_string_equal(".xyz", result + len - 4);
+
+    // Clean up.
+    rm_rf(test_dir);
 }
 
 /** Verifies find_first_glob() returns -1 for no match. */
@@ -373,11 +380,18 @@ static void test_find_first_glob_buffer_size(void **state)
 {
     (void)state;
     char result[256];
+    const char *test_path = "/tmp/iso-builder-test-glob-file.txt";
 
-    // Find Makefile which should exist.
-    int ret = find_first_glob("./Makefile", result, sizeof(result));
+    // Create a test file.
+    write_file(test_path, "test");
+
+    // Find the test file using exact path as glob pattern.
+    int ret = find_first_glob(test_path, result, sizeof(result));
     assert_int_equal(0, ret);
-    assert_string_equal("./Makefile", result);
+    assert_string_equal(test_path, result);
+
+    // Clean up.
+    remove(test_path);
 }
 
 // --- mkdir_p tests ---

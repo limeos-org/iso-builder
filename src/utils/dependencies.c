@@ -59,6 +59,12 @@ int validate_dependencies(void)
 
 int is_command_available(const char *name)
 {
+    // Reject NULL, empty strings, and paths (containing '/').
+    if (name == NULL || name[0] == '\0' || strchr(name, '/') != NULL)
+    {
+        return 0;
+    }
+
     // Get PATH environment variable.
     char *path_env = getenv("PATH");
     if (path_env == NULL)

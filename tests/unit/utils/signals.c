@@ -1,6 +1,12 @@
 /**
  * This code is responsible for testing the signal handling utility functions,
  * including interrupt checking and cleanup directory management.
+ *
+ * LIMITATION: These tests only verify the non-interrupted code path. The actual
+ * signal handling behavior (cleanup on SIGINT/SIGTERM) cannot be easily tested
+ * in unit tests without sending real signals, which could interfere with the
+ * test runner. Integration tests should be used to verify signal handling works
+ * correctly in practice.
  */
 
 #include "../../all.h"
@@ -25,8 +31,6 @@ static int teardown(void **state)
     return 0;
 }
 
-// --- check_interrupted tests ---
-
 /** Verifies check_interrupted() returns 0 when not interrupted. */
 static void test_check_interrupted_not_interrupted(void **state)
 {
@@ -39,8 +43,6 @@ static void test_check_interrupted_not_interrupted(void **state)
     // Should be 0 since no signal was sent.
     assert_int_equal(0, result);
 }
-
-// --- clear_cleanup_dir tests ---
 
 /** Verifies clear_cleanup_dir() clears the cleanup directory. */
 static void test_clear_cleanup_dir_clears(void **state)
@@ -58,8 +60,6 @@ static void test_clear_cleanup_dir_clears(void **state)
     int result = check_interrupted();
     assert_int_equal(0, result);
 }
-
-// --- install_signal_handlers tests ---
 
 /** Verifies install_signal_handlers() accepts NULL cleanup directory. */
 static void test_install_signal_handlers_null_dir(void **state)
@@ -115,13 +115,13 @@ static void test_install_signal_handlers_long_path(void **state)
 int main(void)
 {
     const struct CMUnitTest tests[] = {
-        // check_interrupted tests
+        // check_interrupted tests.
         cmocka_unit_test_setup_teardown(test_check_interrupted_not_interrupted, setup, teardown),
 
-        // clear_cleanup_dir tests
+        // clear_cleanup_dir tests.
         cmocka_unit_test_setup_teardown(test_clear_cleanup_dir_clears, setup, teardown),
 
-        // install_signal_handlers tests
+        // install_signal_handlers tests.
         cmocka_unit_test_setup_teardown(test_install_signal_handlers_null_dir, setup, teardown),
         cmocka_unit_test_setup_teardown(test_install_signal_handlers_valid_dir, setup, teardown),
         cmocka_unit_test_setup_teardown(test_install_signal_handlers_long_path, setup, teardown),

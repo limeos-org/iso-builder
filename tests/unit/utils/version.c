@@ -19,8 +19,6 @@ static int teardown(void **state)
     return 0;
 }
 
-// --- skip_version_prefix tests ---
-
 /** Verifies skip_version_prefix() removes lowercase 'v' prefix. */
 static void test_skip_version_prefix_lowercase_v(void **state)
 {
@@ -52,8 +50,6 @@ static void test_skip_version_prefix_empty(void **state)
     const char *result = skip_version_prefix("");
     assert_string_equal("", result);
 }
-
-// --- validate_version tests ---
 
 /** Verifies validate_version() accepts standard semver format. */
 static void test_validate_version_standard(void **state)
@@ -139,8 +135,6 @@ static void test_validate_version_with_spaces(void **state)
     assert_int_equal(-1, validate_version("1. 2.3"));
 }
 
-// --- extract_major_version tests ---
-
 /** Verifies extract_major_version() extracts single digit major. */
 static void test_extract_major_version_single_digit(void **state)
 {
@@ -168,8 +162,6 @@ static void test_extract_major_version_zero(void **state)
     (void)state;
     assert_int_equal(0, extract_major_version("0.1.0"));
 }
-
-// --- compare_versions tests ---
 
 /** Verifies compare_versions() returns 0 for equal versions. */
 static void test_compare_versions_equal(void **state)
@@ -233,8 +225,6 @@ static void test_compare_versions_multi_digit(void **state)
     (void)state;
     assert_int_equal(1, compare_versions("1.10.0", "1.9.0"));
 }
-
-// --- Additional edge case tests ---
 
 /** Verifies validate_version() rejects leading zeros. */
 static void test_validate_version_leading_zeros(void **state)
@@ -304,12 +294,13 @@ static void test_validate_version_long(void **state)
 int main(void)
 {
     const struct CMUnitTest tests[] = {
-        /* skip_version_prefix tests */
+        // skip_version_prefix tests.
         cmocka_unit_test_setup_teardown(test_skip_version_prefix_lowercase_v, setup, teardown),
         cmocka_unit_test_setup_teardown(test_skip_version_prefix_uppercase_v, setup, teardown),
         cmocka_unit_test_setup_teardown(test_skip_version_prefix_no_prefix, setup, teardown),
         cmocka_unit_test_setup_teardown(test_skip_version_prefix_empty, setup, teardown),
-        /* validate_version tests */
+
+        // validate_version tests.
         cmocka_unit_test_setup_teardown(test_validate_version_standard, setup, teardown),
         cmocka_unit_test_setup_teardown(test_validate_version_with_v_prefix, setup, teardown),
         cmocka_unit_test_setup_teardown(test_validate_version_with_uppercase_v_prefix, setup, teardown),
@@ -322,12 +313,14 @@ int main(void)
         cmocka_unit_test_setup_teardown(test_validate_version_extra_dots, setup, teardown),
         cmocka_unit_test_setup_teardown(test_validate_version_non_numeric, setup, teardown),
         cmocka_unit_test_setup_teardown(test_validate_version_with_spaces, setup, teardown),
-        /* extract_major_version tests */
+
+        // extract_major_version tests.
         cmocka_unit_test_setup_teardown(test_extract_major_version_single_digit, setup, teardown),
         cmocka_unit_test_setup_teardown(test_extract_major_version_multi_digit, setup, teardown),
         cmocka_unit_test_setup_teardown(test_extract_major_version_with_prefix, setup, teardown),
         cmocka_unit_test_setup_teardown(test_extract_major_version_zero, setup, teardown),
-        /* compare_versions tests */
+
+        // compare_versions tests.
         cmocka_unit_test_setup_teardown(test_compare_versions_equal, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compare_versions_equal_with_prefix, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compare_versions_major_greater, setup, teardown),
@@ -338,7 +331,7 @@ int main(void)
         cmocka_unit_test_setup_teardown(test_compare_versions_patch_less, setup, teardown),
         cmocka_unit_test_setup_teardown(test_compare_versions_multi_digit, setup, teardown),
 
-        // Additional edge case tests
+        // Additional edge case tests.
         cmocka_unit_test_setup_teardown(test_validate_version_leading_zeros, setup, teardown),
         cmocka_unit_test_setup_teardown(test_validate_version_negative, setup, teardown),
         cmocka_unit_test_setup_teardown(test_extract_major_version_invalid, setup, teardown),
