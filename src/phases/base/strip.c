@@ -52,7 +52,10 @@ int strip_base_rootfs(const char *path)
     }
 
     // Remove unnecessary firmware while keeping GPU and CPU microcode.
-    cleanup_unnecessary_firmware(path);
+    if (cleanup_unnecessary_firmware(path) != 0)
+    {
+        LOG_WARNING("Some firmware could not be removed (continuing anyway)");
+    }
 
     // Blacklist kernel modules for removed firmware so they don't try to load.
     blacklist_wireless_modules(path);

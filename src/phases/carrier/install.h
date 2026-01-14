@@ -1,11 +1,14 @@
 #pragma once
 
 /**
- * Copies the installer binary into the carrier rootfs.
+ * Installs LimeOS component binaries into the carrier rootfs.
+ *
+ * Copies all required components and any available optional components from
+ * the components directory into the carrier rootfs bin directory.
  *
  * @param rootfs_path The path to the carrier rootfs directory.
  * @param components_path The path to the directory containing component
- *        binaries.
+ * binaries.
  *
  * @return - `0` - Indicates successful installation.
  * @return - `-1` - Indicates installation failure.

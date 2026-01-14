@@ -243,8 +243,11 @@ int cleanup_versioned_boot_files(const char *rootfs_path);
  * Call after installing packages, as linux-image may reinstall firmware.
  *
  * @param rootfs_path The path to the rootfs directory.
+ *
+ * @return - `0` - Indicates success.
+ * @return - `-1` - Indicates one or more removals failed.
  */
-void cleanup_unnecessary_firmware(const char *rootfs_path);
+int cleanup_unnecessary_firmware(const char *rootfs_path);
 
 /**
  * Blacklists wireless and bluetooth kernel modules.

@@ -536,12 +536,13 @@ static const char *FIRMWARE_TO_REMOVE[] = {
     "cirrus",
 };
 
-void cleanup_unnecessary_firmware(const char *rootfs_path)
+int cleanup_unnecessary_firmware(const char *rootfs_path)
 {
     char fw_base[COMMAND_PATH_MAX_LENGTH];
     char dir_path[COMMAND_PATH_MAX_LENGTH];
     char command[COMMAND_MAX_LENGTH];
     char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
+    int failed = 0;
 
     // Construct the firmware base path.
     snprintf(fw_base, sizeof(fw_base), "%s/usr/lib/firmware", rootfs_path);
@@ -551,7 +552,10 @@ void cleanup_unnecessary_firmware(const char *rootfs_path)
     for (int i = 0; i < count; i++)
     {
         snprintf(dir_path, sizeof(dir_path), "%s/%s", fw_base, FIRMWARE_TO_REMOVE[i]);
-        rm_rf(dir_path);
+        if (rm_rf(dir_path) != 0)
+        {
+            failed = 1;
+        }
     }
 
     // Remove Intel Bluetooth firmware (files matching *bt* in intel/).
@@ -560,14 +564,23 @@ void cleanup_unnecessary_firmware(const char *rootfs_path)
     {
         snprintf(command, sizeof(command),
             "find %s -name '*bt*' -type f -delete 2>/dev/null", quoted_path);
-        run_command(command);
+        if (run_command(command) != 0)
+        {
+            failed = 1;
+        }
     }
 
     // Remove Intel Sound Open Firmware.
     snprintf(dir_path, sizeof(dir_path), "%s/intel/sof", fw_base);
-    rm_rf(dir_path);
+    if (rm_rf(dir_path) != 0)
+    {
+        failed = 1;
+    }
     snprintf(dir_path, sizeof(dir_path), "%s/intel/sof-tplg", fw_base);
-    rm_rf(dir_path);
+    if (rm_rf(dir_path) != 0)
+    {
+        failed = 1;
+    }
 
     // Remove Broadcom Bluetooth firmware (.hcd files).
     snprintf(dir_path, sizeof(dir_path), "%s/brcm", fw_base);
@@ -575,7 +588,10 @@ void cleanup_unnecessary_firmware(const char *rootfs_path)
     {
         snprintf(command, sizeof(command),
             "find %s -name '*.hcd' -type f -delete 2>/dev/null", quoted_path);
-        run_command(command);
+        if (run_command(command) != 0)
+        {
+            failed = 1;
+        }
     }
 
     // Remove Broadcom WiFi firmware (pcie/sdio files).
@@ -584,7 +600,10 @@ void cleanup_unnecessary_firmware(const char *rootfs_path)
         snprintf(command, sizeof(command),
             "find %s \\( -name '*-pcie.*' -o -name '*-sdio.*' \\) -type f -delete 2>/dev/null",
             quoted_path);
-        run_command(command);
+        if (run_command(command) != 0)
+        {
+            failed = 1;
+        }
     }
 
     // Also check /lib/firmware (legacy path).
@@ -592,8 +611,13 @@ void cleanup_unnecessary_firmware(const char *rootfs_path)
     for (int i = 0; i < count; i++)
     {
         snprintf(dir_path, sizeof(dir_path), "%s/%s", fw_base, FIRMWARE_TO_REMOVE[i]);
-        rm_rf(dir_path);
+        if (rm_rf(dir_path) != 0)
+        {
+            failed = 1;
+        }
     }
+
+    return failed ? -1 : 0;
 }
 
 void blacklist_wireless_modules(const char *rootfs_path)

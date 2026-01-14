@@ -24,7 +24,10 @@ int run_target_phase(
     }
 
     // Remove unnecessary firmware.
-    cleanup_unnecessary_firmware(rootfs_dir);
+    if (cleanup_unnecessary_firmware(rootfs_dir) != 0)
+    {
+        LOG_WARNING("Some firmware could not be removed (continuing anyway)");
+    }
 
     // Clean up apt directories.
     if (cleanup_apt_directories(rootfs_dir) != 0)
