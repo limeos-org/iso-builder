@@ -9,32 +9,38 @@ int run_target_phase(
     const char *tarball_path, const char *version, int use_cache
 )
 {
+    // Create target rootfs from base.
     if (create_target_rootfs(base_rootfs_dir, rootfs_dir, use_cache) != 0)
     {
         LOG_ERROR("Failed to create target rootfs");
         return -1;
     }
 
+    // Apply target branding.
     if (brand_target_rootfs(rootfs_dir, version) != 0)
     {
         LOG_ERROR("Failed to brand target rootfs");
         return -1;
     }
 
+    // Remove unnecessary firmware.
     cleanup_unnecessary_firmware(rootfs_dir);
 
+    // Clean up apt directories.
     if (cleanup_apt_directories(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to cleanup apt directories");
         return -1;
     }
 
+    // Package target rootfs as tarball.
     if (package_target_rootfs(rootfs_dir, tarball_path) != 0)
     {
         LOG_ERROR("Failed to package target rootfs");
         return -1;
     }
 
+    // Remove the target rootfs directory.
     rm_rf(rootfs_dir);
     LOG_INFO("Phase 3 complete: Target rootfs packaged");
     return 0;

@@ -18,13 +18,6 @@ semistatic int compute_file_sha256(
     const char *path, char *out_hash, size_t hash_len
 )
 {
-    unsigned char hash[SHA256_DIGEST_LEN];
-    unsigned char buffer[CHECKSUM_BUFFER_SIZE];
-    unsigned int digest_len = 0;
-    EVP_MD_CTX *ctx;
-    FILE *file;
-    size_t bytes_read;
-
     // Validate output buffer size.
     if (hash_len < SHA256_HEX_LENGTH)
     {
@@ -32,7 +25,7 @@ semistatic int compute_file_sha256(
     }
 
     // Open the file for reading.
-    file = fopen(path, "rb");
+    FILE *file = fopen(path, "rb");
     if (!file)
     {
         LOG_ERROR("Failed to open file for checksum: %s", path);
@@ -40,7 +33,7 @@ semistatic int compute_file_sha256(
     }
 
     // Initialize the digest context.
-    ctx = EVP_MD_CTX_new();
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
     if (!ctx)
     {
         fclose(file);
@@ -56,6 +49,8 @@ semistatic int compute_file_sha256(
     }
 
     // Process the file in chunks.
+    unsigned char buffer[CHECKSUM_BUFFER_SIZE];
+    size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0)
     {
         if (EVP_DigestUpdate(ctx, buffer, bytes_read) != 1)
@@ -67,6 +62,8 @@ semistatic int compute_file_sha256(
     }
 
     // Finalize the hash computation.
+    unsigned char hash[SHA256_DIGEST_LEN];
+    unsigned int digest_len = 0;
     if (EVP_DigestFinal_ex(ctx, hash, &digest_len) != 1)
     {
         EVP_MD_CTX_free(ctx);
@@ -96,14 +93,6 @@ static int fetch_expected_checksum(
     size_t hash_len
 )
 {
-    CURL *curl;
-    CURLcode result;
-    char url[FETCH_URL_MAX_LENGTH];
-    char *checksums_data = NULL;
-    size_t checksums_size = 0;
-    FILE *checksums_stream;
-    long http_code = 0;
-
     // Validate buffer size.
     if (hash_len < SHA256_HEX_LENGTH)
     {
@@ -111,6 +100,7 @@ static int fetch_expected_checksum(
     }
 
     // Construct the checksums file URL.
+    char url[FETCH_URL_MAX_LENGTH];
     snprintf(
         url, sizeof(url),
         "https://github.com/%s/%s/releases/download/%s/" CONFIG_CHECKSUMS_FILENAME,
@@ -118,7 +108,9 @@ static int fetch_expected_checksum(
     );
 
     // Create an in-memory stream for the checksums data.
-    checksums_stream = open_memstream(&checksums_data, &checksums_size);
+    char *checksums_data = NULL;
+    size_t checksums_size = 0;
+    FILE *checksums_stream = open_memstream(&checksums_data, &checksums_size);
     if (!checksums_stream)
     {
         LOG_ERROR("Failed to create memory stream for checksums");
@@ -126,7 +118,7 @@ static int fetch_expected_checksum(
     }
 
     // Initialize the curl session.
-    curl = curl_easy_init();
+    CURL *curl = curl_easy_init();
     if (!curl)
     {
         fclose(checksums_stream);
@@ -141,7 +133,8 @@ static int fetch_expected_checksum(
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, CONFIG_USER_AGENT);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
-    result = curl_easy_perform(curl);
+    CURLcode result = curl_easy_perform(curl);
+    long http_code = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
     curl_easy_cleanup(curl);
     fclose(checksums_stream);
@@ -157,7 +150,6 @@ static int fetch_expected_checksum(
     char *line = checksums_data;
     char *next_line;
     int found = 0;
-
     while (line && *line)
     {
         next_line = strchr(line, '\n');
@@ -203,10 +195,8 @@ static int verify_checksum(
     const char *binary_name
 )
 {
-    char expected_hash[SHA256_HEX_LENGTH];
-    char actual_hash[SHA256_HEX_LENGTH];
-
     // Fetch the expected checksum from the release.
+    char expected_hash[SHA256_HEX_LENGTH];
     if (fetch_expected_checksum(repo_name, version, binary_name, expected_hash, sizeof(expected_hash)) != 0)
     {
         LOG_WARNING("No checksum available for %s - skipping verification", binary_name);
@@ -214,6 +204,7 @@ static int verify_checksum(
     }
 
     // Compute the actual checksum of the downloaded file.
+    char actual_hash[SHA256_HEX_LENGTH];
     if (compute_file_sha256(file_path, actual_hash, sizeof(actual_hash)) != 0)
     {
         LOG_ERROR("Failed to compute checksum for %s", file_path);
@@ -237,10 +228,8 @@ static int copy_local_component(
     const Component *component, const char *output_directory
 )
 {
-    char local_path[COMMAND_PATH_MAX_LENGTH];
-    char output_path[COMMAND_PATH_MAX_LENGTH];
-
     // Construct the local binary path using the binary name.
+    char local_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(local_path, sizeof(local_path), CONFIG_LOCAL_BIN_DIR "/%s", component->binary_name);
 
     // Check if the local binary exists.
@@ -253,6 +242,7 @@ static int copy_local_component(
     mkdir_p(output_directory);
 
     // Construct the output path using the repo name.
+    char output_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, component->repo_name);
 
     // Copy the local binary to the output directory.
@@ -279,14 +269,8 @@ static int download_remote(
     const char *output_directory
 )
 {
-    CURL *curl;
-    CURLcode result;
-    FILE *output_file;
-    char url[FETCH_URL_MAX_LENGTH];
-    char output_path[COMMAND_PATH_MAX_LENGTH];
-    char resolved_version[VERSION_MAX_LENGTH];
-
     // Resolve the version to the latest within the major version.
+    char resolved_version[VERSION_MAX_LENGTH];
     int resolve_result = resolve_version(
         component->repo_name, version, resolved_version, sizeof(resolved_version)
     );
@@ -307,6 +291,7 @@ static int download_remote(
     }
 
     // Construct the GitHub release download URL.
+    char url[FETCH_URL_MAX_LENGTH];
     snprintf(
         url, sizeof(url),
         "https://github.com/%s/%s/releases/download/%s/%s",
@@ -314,6 +299,7 @@ static int download_remote(
     );
 
     // Construct the local output file path.
+    char output_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, component->repo_name);
 
     // Log the fetch operation.
@@ -323,7 +309,7 @@ static int download_remote(
     mkdir_p(output_directory);
 
     // Open the output file for writing.
-    output_file = fopen(output_path, "wb");
+    FILE *output_file = fopen(output_path, "wb");
     if (!output_file)
     {
         LOG_ERROR("Failed to create file %s: %s", output_path, strerror(errno));
@@ -331,7 +317,7 @@ static int download_remote(
     }
 
     // Initialize the curl session.
-    curl = curl_easy_init();
+    CURL *curl = curl_easy_init();
     if (!curl)
     {
         LOG_ERROR("Failed to initialize curl");
@@ -348,7 +334,7 @@ static int download_remote(
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
 
     // Perform the download.
-    result = curl_easy_perform(curl);
+    CURLcode result = curl_easy_perform(curl);
 
     // Get the HTTP response code.
     long http_code = 0;

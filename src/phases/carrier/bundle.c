@@ -10,21 +10,22 @@
  */
 static int copy_debs(const char *src_dir, const char *dst_dir)
 {
-    char command[COMMAND_MAX_LENGTH];
+    // Quote the source path for shell safety.
     char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
-
-    // Quote paths for shell safety.
     if (shell_quote_path(src_dir, quoted_src, sizeof(quoted_src)) != 0)
     {
         return -1;
     }
+
+    // Quote the destination path for shell safety.
+    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(dst_dir, quoted_dst, sizeof(quoted_dst)) != 0)
     {
         return -1;
     }
 
     // Copy .deb files.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "cp %s/*.deb %s/", quoted_src, quoted_dst);
     return run_command(command);
 }
@@ -80,6 +81,7 @@ static int restore_bundles(const char *type, const char *dst_dir)
  */
 static int save_bundles(const char *type, const char *src_dir)
 {
+    // Get cache directory.
     char cache_dir[COMMAND_PATH_MAX_LENGTH];
     if (get_cache_dir(cache_dir, sizeof(cache_dir)) != 0)
     {
@@ -87,15 +89,18 @@ static int save_bundles(const char *type, const char *src_dir)
         return -1;
     }
 
+    // Construct bundle directory path.
     char bundle_dir[COMMAND_PATH_MAX_LENGTH];
     snprintf(bundle_dir, sizeof(bundle_dir), "%s/packages/%s", cache_dir, type);
 
+    // Create the bundle directory.
     if (mkdir_p(bundle_dir) != 0)
     {
         LOG_WARNING("Failed to cache %s packages: cannot create directory", type);
         return -1;
     }
 
+    // Copy .deb files to cache.
     if (copy_debs(src_dir, bundle_dir) != 0)
     {
         LOG_WARNING("Failed to cache %s packages: copy failed", type);
@@ -110,6 +115,7 @@ static int save_bundles(const char *type, const char *src_dir)
  */
 static int download_packages(const char *rootfs, const char *dest_dir, const char *packages)
 {
+    // Build the download command.
     char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "cd \"%s\" && apt-get download %s", dest_dir, packages);
     return run_chroot(rootfs, command);

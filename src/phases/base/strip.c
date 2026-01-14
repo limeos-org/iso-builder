@@ -68,7 +68,7 @@ int strip_base_rootfs(const char *path)
         return -3;
     }
     snprintf(dir_path, sizeof(dir_path), "%s/etc/update-motd.d", path);
-    rm_rf(dir_path);  // OK if it doesn't exist
+    rm_rf(dir_path);  // OK if it doesn't exist.
 
     LOG_INFO("Base rootfs stripped successfully");
 

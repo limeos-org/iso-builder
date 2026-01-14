@@ -83,22 +83,19 @@ int shell_quote_path(const char *path, char *out_quoted, size_t buffer_length)
 
 int run_command(const char *command)
 {
-    char line[COMMAND_OUTPUT_LINE_MAX];
-    char full_command[COMMAND_MAX_LENGTH];
-    FILE *pipe;
-    int status;
-
     // Redirect stderr to stdout so we capture all output.
+    char full_command[COMMAND_MAX_LENGTH];
     snprintf(full_command, sizeof(full_command), "%s 2>&1", command);
 
     // Open a pipe to capture command output.
-    pipe = popen(full_command, "r");
+    FILE *pipe = popen(full_command, "r");
     if (pipe == NULL)
     {
         return -1;
     }
 
     // Print each line with gray color and gutter bar.
+    char line[COMMAND_OUTPUT_LINE_MAX];
     while (fgets(line, sizeof(line), pipe) != NULL)
     {
         printf(ANSI_GRAY "  | %s" ANSI_RESET, line);
@@ -106,7 +103,7 @@ int run_command(const char *command)
     }
 
     // Close the pipe and extract the exit status.
-    status = pclose(pipe);
+    int status = pclose(pipe);
     if (status == -1)
     {
         return -1;
@@ -118,23 +115,22 @@ int run_command(const char *command)
 
 int run_chroot(const char *rootfs_path, const char *command)
 {
-    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_cmd[COMMAND_QUOTED_MAX_LENGTH];
-    char full_command[COMMAND_MAX_LENGTH];
-
     // Quote the rootfs path to prevent command injection.
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(rootfs_path, quoted_path, sizeof(quoted_path)) != 0)
     {
         return -2;
     }
 
     // Quote the command to prevent injection.
+    char quoted_cmd[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote(command, quoted_cmd, sizeof(quoted_cmd)) != 0)
     {
         return -2;
     }
 
     // Execute the command inside the chroot environment via sh -c.
+    char full_command[COMMAND_MAX_LENGTH];
     snprintf(
         full_command, sizeof(full_command),
         "chroot %s /bin/sh -c %s",
@@ -150,10 +146,8 @@ int run_chroot(const char *rootfs_path, const char *command)
 
 int mkdir_p(const char *path)
 {
-    char command[COMMAND_MAX_LENGTH];
-    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
-
     // Quote the path to prevent command injection.
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
         LOG_ERROR("Failed to quote path: %s", path);
@@ -161,6 +155,7 @@ int mkdir_p(const char *path)
     }
 
     // Construct the mkdir command with parent directory creation.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "mkdir -p %s", quoted_path);
 
     // Execute the command and check for errors.
@@ -175,16 +170,16 @@ int mkdir_p(const char *path)
 
 int copy_file(const char *src, const char *dst)
 {
-    char command[COMMAND_MAX_LENGTH];
+    // Quote the source path for shell safety.
     char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
-
-    // Quote paths to prevent command injection.
     if (shell_quote_path(src, quoted_src, sizeof(quoted_src)) != 0)
     {
         LOG_ERROR("Failed to quote source path: %s", src);
         return -1;
     }
+
+    // Quote the destination path for shell safety.
+    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(dst, quoted_dst, sizeof(quoted_dst)) != 0)
     {
         LOG_ERROR("Failed to quote destination path: %s", dst);
@@ -192,6 +187,7 @@ int copy_file(const char *src, const char *dst)
     }
 
     // Construct the copy command.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "cp %s %s", quoted_src, quoted_dst);
 
     // Execute the command and check for errors.
@@ -206,16 +202,15 @@ int copy_file(const char *src, const char *dst)
 
 int rm_rf(const char *path)
 {
-    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
-    char command[COMMAND_MAX_LENGTH];
-
     // Quote the path to prevent command injection.
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
         return -2;
     }
 
     // Execute the recursive remove command.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "rm -rf %s", quoted_path);
     if (run_command(command) != 0)
     {
@@ -227,16 +222,15 @@ int rm_rf(const char *path)
 
 int rm_file(const char *path)
 {
-    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
-    char command[COMMAND_MAX_LENGTH];
-
     // Quote the path to prevent command injection.
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
         return -2;
     }
 
     // Execute the remove command.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "rm -f %s", quoted_path);
     if (run_command(command) != 0)
     {
@@ -306,21 +300,22 @@ int chmod_file(const char *mode, const char *path)
 
 int symlink_file(const char *target, const char *link_path)
 {
+    // Quote the target path for shell safety.
     char quoted_target[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_link[COMMAND_QUOTED_MAX_LENGTH];
-    char command[COMMAND_MAX_LENGTH];
-
-    // Quote the target and link paths.
     if (shell_quote(target, quoted_target, sizeof(quoted_target)) != 0)
     {
         return -2;
     }
+
+    // Quote the link path for shell safety.
+    char quoted_link[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(link_path, quoted_link, sizeof(quoted_link)) != 0)
     {
         return -2;
     }
 
     // Execute the symlink command.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "ln -sf %s %s", quoted_target, quoted_link);
     if (run_command(command) != 0)
     {
@@ -360,11 +355,9 @@ int write_file(const char *path, const char *content)
 
 int find_first_glob(const char *pattern, char *out_path, size_t buffer_length)
 {
-    glob_t glob_result;
-    int ret;
-
     // Perform glob expansion without sorting results.
-    ret = glob(pattern, GLOB_NOSORT, NULL, &glob_result);
+    glob_t glob_result;
+    int ret = glob(pattern, GLOB_NOSORT, NULL, &glob_result);
     if (ret != 0 || glob_result.gl_pathc == 0)
     {
         globfree(&glob_result);
@@ -482,11 +475,12 @@ int copy_kernel_and_initrd(const char *rootfs_path)
 
 int cleanup_versioned_boot_files(const char *rootfs_path)
 {
+    // Construct the boot directory path.
     char boot_path[COMMAND_PATH_MAX_LENGTH];
-    char quoted_boot[COMMAND_QUOTED_MAX_LENGTH];
-    char command[COMMAND_MAX_LENGTH];
-
     snprintf(boot_path, sizeof(boot_path), "%s/boot", rootfs_path);
+
+    // Quote the boot path for shell safety.
+    char quoted_boot[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(boot_path, quoted_boot, sizeof(quoted_boot)) != 0)
     {
         LOG_ERROR("Failed to quote boot path");
@@ -496,6 +490,7 @@ int cleanup_versioned_boot_files(const char *rootfs_path)
     // Remove versioned kernel, initrd, config, and System.map files.
     // These are created by the kernel package but not needed after
     // copying to generic names (vmlinuz, initrd.img).
+    char command[COMMAND_MAX_LENGTH];
     snprintf(
         command, sizeof(command),
         "find %s -maxdepth 1 \\( "
@@ -548,6 +543,7 @@ void cleanup_unnecessary_firmware(const char *rootfs_path)
     char command[COMMAND_MAX_LENGTH];
     char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
 
+    // Construct the firmware base path.
     snprintf(fw_base, sizeof(fw_base), "%s/usr/lib/firmware", rootfs_path);
 
     // Remove firmware directories.
@@ -605,8 +601,10 @@ void blacklist_wireless_modules(const char *rootfs_path)
     char dir_path[COMMAND_PATH_MAX_LENGTH];
     char file_path[COMMAND_PATH_MAX_LENGTH];
 
-    // Create modprobe.d directory if it doesn't exist.
+    // Construct the modprobe.d directory path.
     snprintf(dir_path, sizeof(dir_path), "%s/etc/modprobe.d", rootfs_path);
+
+    // Create modprobe.d directory if it doesn't exist.
     if (mkdir_p(dir_path) != 0)
     {
         LOG_WARNING("Failed to create /etc/modprobe.d");
@@ -658,8 +656,10 @@ void mask_rfkill_service(const char *rootfs_path)
     char dir_path[COMMAND_PATH_MAX_LENGTH];
     char mask_path[COMMAND_PATH_MAX_LENGTH];
 
-    // Create systemd system directory if needed.
+    // Construct the systemd system directory path.
     snprintf(dir_path, sizeof(dir_path), "%s/etc/systemd/system", rootfs_path);
+
+    // Create systemd system directory if needed.
     if (mkdir_p(dir_path) != 0)
     {
         LOG_WARNING("Failed to create systemd system directory");

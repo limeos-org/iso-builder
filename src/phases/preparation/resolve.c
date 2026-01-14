@@ -58,13 +58,8 @@ static int fetch_releases_json(
     char **out_json_data
 )
 {
-    CURL *curl;
-    CURLcode result;
-    char url[FETCH_URL_MAX_LENGTH];
-    struct curl_slist *headers = NULL;
-    ResponseBuffer buffer = {0};
-
     // Construct the GitHub API URL.
+    char url[FETCH_URL_MAX_LENGTH];
     snprintf(
         url, sizeof(url),
         "%s/%s/%s/releases",
@@ -72,6 +67,7 @@ static int fetch_releases_json(
     );
 
     // Allocate the initial response buffer.
+    ResponseBuffer buffer = {0};
     buffer.data = malloc(API_BUFFER_SIZE);
     if (!buffer.data)
     {
@@ -82,7 +78,7 @@ static int fetch_releases_json(
     buffer.capacity = API_BUFFER_SIZE;
 
     // Initialize the curl session.
-    curl = curl_easy_init();
+    CURL *curl = curl_easy_init();
     if (!curl)
     {
         free(buffer.data);
@@ -90,6 +86,7 @@ static int fetch_releases_json(
     }
 
     // Set up required headers for GitHub API.
+    struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Accept: application/vnd.github+json");
     headers = curl_slist_append(headers, "X-GitHub-Api-Version: " CONFIG_GITHUB_API_VERSION);
 
@@ -102,7 +99,7 @@ static int fetch_releases_json(
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, FETCH_TIMEOUT_SECONDS);
 
     // Perform the API request.
-    result = curl_easy_perform(curl);
+    CURLcode result = curl_easy_perform(curl);
 
     // Get the HTTP response code.
     long http_code = 0;
@@ -141,13 +138,8 @@ int resolve_version(
     size_t buffer_length
 )
 {
-    char *json_data = NULL;
-    json_object *root = NULL;
-    int target_major;
-    const char *best_version = NULL;
-
     // Extract the target major version from the user-provided version.
-    target_major = extract_major_version(version);
+    int target_major = extract_major_version(version);
     if (target_major < 0)
     {
         LOG_ERROR("Invalid version format: %s", version);
@@ -155,13 +147,14 @@ int resolve_version(
     }
 
     // Fetch the releases JSON from GitHub API.
+    char *json_data = NULL;
     if (fetch_releases_json(component, &json_data) != 0)
     {
         return -1;
     }
 
     // Parse the JSON response.
-    root = json_tokener_parse(json_data);
+    json_object *root = json_tokener_parse(json_data);
     if (!root)
     {
         LOG_ERROR("Failed to parse GitHub API response");
@@ -179,6 +172,7 @@ int resolve_version(
     }
 
     // Iterate through releases to find the best matching version.
+    const char *best_version = NULL;
     size_t release_count = json_object_array_length(root);
     for (size_t i = 0; i < release_count; i++)
     {

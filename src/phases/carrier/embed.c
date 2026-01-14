@@ -7,12 +7,10 @@
 
 int embed_target_rootfs(const char *carrier_rootfs_path, const char *tarball_path)
 {
-    char dst_dir[COMMAND_PATH_MAX_LENGTH];
-    char dst_path[COMMAND_PATH_MAX_LENGTH];
-
     LOG_INFO("Embedding target rootfs tarball into carrier rootfs...");
 
     // Create the target directory within the carrier rootfs.
+    char dst_dir[COMMAND_PATH_MAX_LENGTH];
     snprintf(dst_dir, sizeof(dst_dir), "%s/usr/share/limeos", carrier_rootfs_path);
     if (mkdir_p(dst_dir) != 0)
     {
@@ -21,6 +19,7 @@ int embed_target_rootfs(const char *carrier_rootfs_path, const char *tarball_pat
     }
 
     // Copy the tarball to the carrier rootfs.
+    char dst_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(dst_path, sizeof(dst_path), "%s" CONFIG_TARGET_ROOTFS_PATH, carrier_rootfs_path);
     if (copy_file(tarball_path, dst_path) != 0)
     {

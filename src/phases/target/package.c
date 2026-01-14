@@ -6,18 +6,18 @@
 
 int package_target_rootfs(const char *rootfs_path, const char *output_path)
 {
-    char command[COMMAND_MAX_LENGTH];
-    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_output[COMMAND_QUOTED_MAX_LENGTH];
-
     LOG_INFO("Packaging target rootfs to %s", output_path);
 
-    // Quote paths to prevent shell injection.
+    // Quote the rootfs path for shell safety.
+    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
     {
         LOG_ERROR("Failed to quote rootfs path");
         return -1;
     }
+
+    // Quote the output path for shell safety.
+    char quoted_output[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
     {
         LOG_ERROR("Failed to quote output path");
@@ -27,6 +27,7 @@ int package_target_rootfs(const char *rootfs_path, const char *output_path)
     // Create a compressed tarball of the rootfs.
     // Use --numeric-owner to preserve UIDs/GIDs without mapping to names.
     // Use -C to change to the rootfs directory so paths are relative.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(
         command, sizeof(command),
         "tar --numeric-owner -czf %s -C %s .",

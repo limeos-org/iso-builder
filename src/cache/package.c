@@ -50,13 +50,14 @@ int setup_package_cache_mount(const char *rootfs_path)
         return -1;
     }
 
-    // Quote paths for shell safety.
+    // Quote the source path for shell safety.
     char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(cache_dir, quoted_src, sizeof(quoted_src)) != 0)
     {
         return -1;
     }
 
+    // Quote the destination path for shell safety.
     char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(target_dir, quoted_dst, sizeof(quoted_dst)) != 0)
     {

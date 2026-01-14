@@ -24,8 +24,8 @@
 
 static int create_staging_directory(const char *staging_path)
 {
+    // Create the live directory inside staging.
     char live_path[COMMAND_PATH_MAX_LENGTH];
-
     snprintf(live_path, sizeof(live_path), "%s/live", staging_path);
     if (mkdir_p(live_path) != 0)
     {
@@ -38,20 +38,22 @@ static int create_staging_directory(const char *staging_path)
 
 static int create_squashfs(const char *rootfs_path, const char *staging_path)
 {
-    char command[COMMAND_MAX_LENGTH];
-    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
-    char squashfs_path[COMMAND_PATH_MAX_LENGTH];
-    char quoted_squashfs[COMMAND_QUOTED_MAX_LENGTH];
-
     LOG_INFO("Creating squashfs filesystem...");
 
-    // Prepare paths and quote them to prevent shell injection.
+    // Construct the squashfs output path.
+    char squashfs_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(squashfs_path, sizeof(squashfs_path), "%s/live/filesystem.squashfs", staging_path);
+
+    // Quote the rootfs path for shell safety.
+    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
     {
         LOG_ERROR("Failed to quote rootfs path");
         return -1;
     }
+
+    // Quote the squashfs path for shell safety.
+    char quoted_squashfs[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(squashfs_path, quoted_squashfs, sizeof(quoted_squashfs)) != 0)
     {
         LOG_ERROR("Failed to quote squashfs path");
@@ -59,6 +61,7 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
     }
 
     // Create the squashfs filesystem.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(
         command, sizeof(command),
         "mksquashfs %s %s -comp " SQUASHFS_COMPRESSION " -noappend",
@@ -104,21 +107,25 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
         return -1;
     }
 
-    // Copy isolinux files.
-    char command[COMMAND_MAX_LENGTH];
-    char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
+    // Copy isolinux directory.
     snprintf(src_path, sizeof(src_path), "%s/isolinux", rootfs_path);
+    char quoted_src[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(src_path, quoted_src, sizeof(quoted_src)) != 0)
     {
         LOG_ERROR("Failed to quote isolinux source path");
         return -1;
     }
+
+    // Quote the staging path for shell safety.
+    char quoted_dst[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(staging_path, quoted_dst, sizeof(quoted_dst)) != 0)
     {
         LOG_ERROR("Failed to quote staging path");
         return -1;
     }
+
+    // Run the copy command.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(command, sizeof(command), "cp -r %s %s/", quoted_src, quoted_dst);
     if (run_command(command) != 0)
     {
@@ -141,21 +148,25 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
 static int setup_efi_image(const char *staging_path)
 {
     char command[COMMAND_MAX_LENGTH];
-    char efi_img_path[COMMAND_PATH_MAX_LENGTH];
-    char mount_path[COMMAND_PATH_MAX_LENGTH];
-    char efi_boot_dir[COMMAND_PATH_MAX_LENGTH];
-    char efi_binary_dst[COMMAND_PATH_MAX_LENGTH];
-    char quoted_efi_img[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_mount[COMMAND_QUOTED_MAX_LENGTH];
 
-    // Prepare paths for EFI image and mount point.
+    // Construct the EFI image path.
+    char efi_img_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(efi_img_path, sizeof(efi_img_path), "%s/boot/grub/efiboot.img", staging_path);
+
+    // Construct the mount point path.
+    char mount_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(mount_path, sizeof(mount_path), "%s/efi_mount", staging_path);
+
+    // Quote the EFI image path for shell safety.
+    char quoted_efi_img[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(efi_img_path, quoted_efi_img, sizeof(quoted_efi_img)) != 0)
     {
         LOG_ERROR("Failed to quote EFI image path");
         return -1;
     }
+
+    // Quote the mount path for shell safety.
+    char quoted_mount[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(mount_path, quoted_mount, sizeof(quoted_mount)) != 0)
     {
         LOG_ERROR("Failed to quote mount path");
@@ -196,6 +207,7 @@ static int setup_efi_image(const char *staging_path)
     }
 
     // Create EFI boot directory.
+    char efi_boot_dir[COMMAND_PATH_MAX_LENGTH];
     snprintf(efi_boot_dir, sizeof(efi_boot_dir), "%s/EFI/BOOT", mount_path);
     if (mkdir_p(efi_boot_dir) != 0)
     {
@@ -203,6 +215,7 @@ static int setup_efi_image(const char *staging_path)
     }
 
     // Copy GRUB EFI binary.
+    char efi_binary_dst[COMMAND_PATH_MAX_LENGTH];
     snprintf(efi_binary_dst, sizeof(efi_binary_dst), "%s/EFI/BOOT/BOOTX64.EFI", mount_path);
     if (copy_file(CONFIG_GRUB_EFI_PATH, efi_binary_dst) != 0)
     {
@@ -252,39 +265,43 @@ static int setup_efi_image(const char *staging_path)
 
 static int run_xorriso(const char *staging_path, const char *output_path)
 {
-    char command[COMMAND_MAX_LENGTH];
-
-    // Quote paths to prevent shell injection.
+    // Quote the staging path for shell safety.
     char quoted_staging[COMMAND_QUOTED_MAX_LENGTH];
-    char quoted_output[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(staging_path, quoted_staging, sizeof(quoted_staging)) != 0)
     {
         LOG_ERROR("Failed to quote staging path");
         return -1;
     }
+
+    // Quote the output path for shell safety.
+    char quoted_output[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
     {
         LOG_ERROR("Failed to quote output path");
         return -1;
     }
 
-    // Build hybrid ISO supporting both BIOS (isolinux) and UEFI (EFI image)
-    // boot.
-    // -isohybrid-gpt-basdat: Mark EFI partition as basic data for GPT systems.
+    // Build hybrid ISO supporting both BIOS (isolinux) and UEFI (EFI image).
     LOG_INFO("Running xorriso to create hybrid ISO...");
+    char command[COMMAND_MAX_LENGTH];
     snprintf(
         command, sizeof(command),
-        "xorriso -as mkisofs "
-        "-o %s "
-        "-isohybrid-mbr %s "
-        "-c isolinux/boot.cat "
-        "-b isolinux/isolinux.bin "
-        "-no-emul-boot -boot-load-size %d -boot-info-table "
-        "-eltorito-alt-boot "
-        "-e boot/grub/efiboot.img "
-        "-no-emul-boot -isohybrid-gpt-basdat "
-        "%s",
-        quoted_output, CONFIG_ISOLINUX_MBR_PATH, BOOT_LOAD_SECTORS, quoted_staging
+        "xorriso "
+        "-as mkisofs "                 // Emulate mkisofs command syntax.
+        "-o %s "                       // Output ISO file path.
+        "-isohybrid-mbr %s "           // Embed MBR boot code for USB boot.
+        "-c isolinux/boot.cat "        // Boot catalog location for El Torito.
+        "-b isolinux/isolinux.bin "    // BIOS boot image (isolinux).
+        "-no-emul-boot "               // Boot image is not a disk emulation.
+        "-boot-load-size %d "          // Sectors to load (4 per El Torito).
+        "-boot-info-table "            // Patch boot image with ISO layout info.
+        "-eltorito-alt-boot "          // Start alternate boot entry for EFI.
+        "-e boot/grub/efiboot.img "    // EFI boot image (GRUB).
+        "-no-emul-boot "               // EFI image is not a disk emulation.
+        "-isohybrid-gpt-basdat "       // Mark EFI partition as GPT basic data.
+        "%s",                          // Source directory (staging).
+        quoted_output, CONFIG_ISOLINUX_MBR_PATH,
+        BOOT_LOAD_SECTORS, quoted_staging
     );
     if (run_command(command) != 0)
     {
@@ -297,6 +314,7 @@ static int run_xorriso(const char *staging_path, const char *output_path)
 
 static void cleanup_staging(const char *staging_path)
 {
+    // Attempt to remove the staging directory with retries.
     for (int attempt = 1; attempt <= CLEANUP_MAX_RETRIES; attempt++)
     {
         if (rm_rf(staging_path) == 0)
@@ -312,41 +330,43 @@ static void cleanup_staging(const char *staging_path)
         }
     }
 
-    LOG_WARNING("Failed to clean up staging directory after %d attempts: %s",
-        CLEANUP_MAX_RETRIES, staging_path);
+    LOG_WARNING(
+        "Failed to clean up staging directory after %d attempts: %s",
+        CLEANUP_MAX_RETRIES, staging_path
+    );
 }
 
-/**
- * Removes boot files from carrier rootfs before squashfs creation.
- *
- * The bootloader loads kernel/initrd from the ISO root, not from inside
- * the squashfs. Removing them here saves 50-150MB.
- */
 static void cleanup_carrier_boot(const char *rootfs_path)
 {
     char path[COMMAND_PATH_MAX_LENGTH];
 
     LOG_INFO("Removing boot files from carrier rootfs...");
 
+    // Remove versioned boot files.
     cleanup_versioned_boot_files(rootfs_path);
 
+    // Remove generic kernel.
     snprintf(path, sizeof(path), "%s/boot/vmlinuz", rootfs_path);
     rm_file(path);
+
+    // Remove generic initrd.
     snprintf(path, sizeof(path), "%s/boot/initrd.img", rootfs_path);
     rm_file(path);
 
+    // Remove isolinux directory.
     snprintf(path, sizeof(path), "%s/isolinux", rootfs_path);
     rm_rf(path);
 }
 
 int create_iso(const char *rootfs_path, const char *output_path)
 {
-    char staging_path[COMMAND_PATH_MAX_LENGTH];
-
     LOG_INFO("Creating bootable ISO image...");
 
+    // Construct the staging directory path.
+    char staging_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(staging_path, sizeof(staging_path), "%s/../staging-iso", rootfs_path);
 
+    // Create the staging directory structure.
     if (create_staging_directory(staging_path) != 0)
     {
         return -1;
@@ -359,26 +379,32 @@ int create_iso(const char *rootfs_path, const char *output_path)
         return -2;
     }
 
+    // Remove boot files from carrier rootfs to reduce squashfs size.
+    // This creates a significant reduction of ~100MB.
     cleanup_carrier_boot(rootfs_path);
 
+    // Create the squashfs filesystem from the carrier rootfs.
     if (create_squashfs(rootfs_path, staging_path) != 0)
     {
         cleanup_staging(staging_path);
         return -3;
     }
 
+    // Set up the EFI boot image.
     if (setup_efi_image(staging_path) != 0)
     {
         cleanup_staging(staging_path);
         return -4;
     }
 
+    // Assemble the final hybrid ISO.
     if (run_xorriso(staging_path, output_path) != 0)
     {
         cleanup_staging(staging_path);
         return -5;
     }
 
+    // Clean up the staging directory.
     cleanup_staging(staging_path);
 
     LOG_INFO("ISO created successfully: %s", output_path);

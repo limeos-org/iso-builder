@@ -9,7 +9,7 @@ int create_target_rootfs(const char *base_path, const char *path, int use_cache)
 {
     LOG_INFO("Creating target rootfs at %s", path);
 
-    // Quote paths to prevent shell injection.
+    // Quote the base path for shell safety.
     char quoted_base[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(base_path, quoted_base, sizeof(quoted_base)) != 0)
     {
@@ -17,6 +17,7 @@ int create_target_rootfs(const char *base_path, const char *path, int use_cache)
         return -1;
     }
 
+    // Quote the destination path for shell safety.
     char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {

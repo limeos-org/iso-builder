@@ -11,8 +11,11 @@ int get_cache_dir(char *out_path, size_t buffer_length)
     const char *cache_home = getenv("XDG_CACHE_HOME");
     if (cache_home && cache_home[0] != '\0')
     {
-        snprintf(out_path, buffer_length, "%s/%s",
-            cache_home, CONFIG_CACHE_DIR_NAME);
+        snprintf(
+            out_path, buffer_length,
+            "%s/%s",
+            cache_home, CONFIG_CACHE_DIR_NAME
+        );
         return 0;
     }
 
@@ -21,7 +24,8 @@ int get_cache_dir(char *out_path, size_t buffer_length)
     if (home && home[0] != '\0')
     {
         snprintf(
-            out_path, buffer_length, "%s/.cache/%s",
+            out_path, buffer_length,
+            "%s/.cache/%s",
             home, CONFIG_CACHE_DIR_NAME
         );
         return 0;

@@ -11,9 +11,6 @@
 int brand_splash(const char *rootfs_path, const char *logo_path)
 {
     char theme_dir[COMMAND_PATH_MAX_LENGTH];
-    char theme_file_path[COMMAND_PATH_MAX_LENGTH];
-    char splash_dest[COMMAND_PATH_MAX_LENGTH];
-    char theme_cmd[COMMAND_PATH_MAX_LENGTH];
 
     LOG_INFO("Configuring Plymouth splash screen...");
 
@@ -38,6 +35,7 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
     }
 
     // Construct the destination path for the splash image.
+    char splash_dest[COMMAND_PATH_MAX_LENGTH];
     snprintf(splash_dest, sizeof(splash_dest), "%s/splash.png", theme_dir);
 
     // Copy the logo to the theme directory.
@@ -48,6 +46,7 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
     }
 
     // Construct the theme file path.
+    char theme_file_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(theme_file_path, sizeof(theme_file_path), "%s/" CONFIG_PLYMOUTH_THEME_NAME ".plymouth", theme_dir);
 
     // Define the Plymouth theme configuration.
@@ -87,6 +86,7 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
     }
 
     // Set LimeOS as the default Plymouth theme.
+    char theme_cmd[COMMAND_PATH_MAX_LENGTH];
     snprintf(theme_cmd, sizeof(theme_cmd), "plymouth-set-default-theme %s", CONFIG_PLYMOUTH_THEME_NAME);
     if (run_chroot(rootfs_path, theme_cmd) != 0)
     {

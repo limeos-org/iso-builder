@@ -7,12 +7,10 @@
 
 int create_base_rootfs(const char *path)
 {
-    char command[COMMAND_MAX_LENGTH];
-    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
-
     LOG_INFO("Creating base rootfs at %s", path);
 
-    // Quote the path to prevent shell injection.
+    // Quote the path for shell safety.
+    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
         LOG_ERROR("Failed to quote path");
@@ -20,6 +18,7 @@ int create_base_rootfs(const char *path)
     }
 
     // Run debootstrap to create a minimal Debian rootfs.
+    char command[COMMAND_MAX_LENGTH];
     snprintf(
         command, sizeof(command),
         "debootstrap --variant=minbase %s %s",

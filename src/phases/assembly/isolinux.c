@@ -6,13 +6,10 @@
 
 int setup_isolinux(const char *rootfs_path)
 {
-    char isolinux_dir[COMMAND_PATH_MAX_LENGTH];
-    char isolinux_cfg_path[COMMAND_PATH_MAX_LENGTH];
-    char dst_path[COMMAND_PATH_MAX_LENGTH];
-
     LOG_INFO("Configuring isolinux for BIOS boot");
 
     // Construct the isolinux directory path.
+    char isolinux_dir[COMMAND_PATH_MAX_LENGTH];
     snprintf(isolinux_dir, sizeof(isolinux_dir), "%s/isolinux", rootfs_path);
 
     // Create the isolinux directory.
@@ -23,6 +20,7 @@ int setup_isolinux(const char *rootfs_path)
     }
 
     // Copy isolinux.bin from the system.
+    char dst_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(dst_path, sizeof(dst_path), "%s/isolinux.bin", isolinux_dir);
     if (copy_file(CONFIG_ISOLINUX_BIN_PATH, dst_path) != 0)
     {
@@ -71,6 +69,7 @@ int setup_isolinux(const char *rootfs_path)
     }
 
     // Construct the isolinux.cfg path.
+    char isolinux_cfg_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(
         isolinux_cfg_path, sizeof(isolinux_cfg_path),
         "%s/isolinux.cfg", isolinux_dir

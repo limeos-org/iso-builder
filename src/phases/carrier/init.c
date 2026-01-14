@@ -39,7 +39,11 @@ static int write_installer_service(const char *rootfs_path)
         "WantedBy=multi-user.target\n";
 
     // Write the installer service unit file.
-    snprintf(path, sizeof(path), "%s/etc/systemd/system/" CONFIG_INSTALLER_SERVICE_NAME ".service", rootfs_path);
+    snprintf(
+        path, sizeof(path),
+        "%s/etc/systemd/system/" CONFIG_INSTALLER_SERVICE_NAME ".service",
+        rootfs_path
+    );
     if (write_file(path, service_content) != 0)
     {
         return -1;
@@ -50,10 +54,8 @@ static int write_installer_service(const char *rootfs_path)
 
 static int enable_installer_service(const char *rootfs_path)
 {
+    // Create the "target wants" directory.
     char wants_dir[COMMAND_PATH_MAX_LENGTH];
-    char link_path[COMMAND_PATH_MAX_LENGTH];
-
-    // Create the target wants directory.
     snprintf(wants_dir, sizeof(wants_dir), "%s/etc/systemd/system/multi-user.target.wants", rootfs_path);
     if (mkdir_p(wants_dir) != 0)
     {
@@ -61,6 +63,7 @@ static int enable_installer_service(const char *rootfs_path)
     }
 
     // Create symlink to enable the service.
+    char link_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(link_path, sizeof(link_path), "%s/" CONFIG_INSTALLER_SERVICE_NAME ".service", wants_dir);
     if (symlink_file("../" CONFIG_INSTALLER_SERVICE_NAME ".service", link_path) != 0)
     {
@@ -73,9 +76,8 @@ static int enable_installer_service(const char *rootfs_path)
 
 static int set_default_systemd_target(const char *rootfs_path)
 {
-    char link_path[COMMAND_PATH_MAX_LENGTH];
-
     // Set multi-user target as default.
+    char link_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(link_path, sizeof(link_path), "%s/etc/systemd/system/default.target", rootfs_path);
     if (symlink_file("/lib/systemd/system/multi-user.target", link_path) != 0)
     {
@@ -88,9 +90,8 @@ static int set_default_systemd_target(const char *rootfs_path)
 
 static int disable_tty1_getty(const char *rootfs_path)
 {
-    char getty_path[COMMAND_PATH_MAX_LENGTH];
-
     // Remove getty on tty1 to prevent conflict with installer.
+    char getty_path[COMMAND_PATH_MAX_LENGTH];
     snprintf(
         getty_path, sizeof(getty_path),
         "%s/etc/systemd/system/getty.target.wants/getty@tty1.service",
