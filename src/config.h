@@ -211,13 +211,8 @@ static const Component CONFIG_OPTIONAL_COMPONENTS[] = {
 // Cache Configuration
 // ---
 
-/**
- * The cache version number.
- *
- * Increment this to invalidate all existing caches when the base rootfs
- * creation or stripping logic changes in a way that affects the output.
- */
-#define CONFIG_CACHE_VERSION 1
+/** The cache directory name under XDG_CACHE_HOME or ~/.cache. */
+#define CONFIG_CACHE_DIR_NAME "limeos-iso-builder"
 
 // ---
 // Service Configuration

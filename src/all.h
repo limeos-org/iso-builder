@@ -29,12 +29,14 @@
 
 #include "config.h"
 
+#include "cache/cache.h"
+#include "cache/rootfs.h"
+#include "cache/package.h"
 #include "phases/preparation/resolve.h"
 #include "phases/preparation/download.h"
 #include "phases/preparation/preparation.h"
 #include "phases/base/create.h"
 #include "phases/base/strip.h"
-#include "phases/base/cache.h"
 #include "phases/base/base.h"
 #include "phases/target/create.h"
 #include "phases/target/brand.h"

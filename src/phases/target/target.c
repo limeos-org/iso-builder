@@ -6,10 +6,10 @@
 
 int run_target_phase(
     const char *base_rootfs_dir, const char *rootfs_dir,
-    const char *tarball_path, const char *version
+    const char *tarball_path, const char *version, int use_cache
 )
 {
-    if (create_target_rootfs(base_rootfs_dir, rootfs_dir) != 0)
+    if (create_target_rootfs(base_rootfs_dir, rootfs_dir, use_cache) != 0)
     {
         LOG_ERROR("Failed to create target rootfs");
         return -1;

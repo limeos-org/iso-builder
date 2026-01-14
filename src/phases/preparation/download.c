@@ -14,7 +14,7 @@
 /** Length of SHA256 hash in hex format (64 chars + null). */
 #define SHA256_HEX_LENGTH 65
 
-static int compute_file_sha256(
+semistatic int compute_file_sha256(
     const char *path, char *out_hash, size_t hash_len
 )
 {

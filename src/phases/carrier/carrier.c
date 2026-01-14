@@ -9,10 +9,11 @@ int run_carrier_phase(
     const char *rootfs_dir,
     const char *tarball_path,
     const char *components_dir,
-    const char *version
+    const char *version,
+    int use_cache
 )
 {
-    if (create_carrier_rootfs(base_rootfs_dir, rootfs_dir) != 0)
+    if (create_carrier_rootfs(base_rootfs_dir, rootfs_dir, use_cache) != 0)
     {
         LOG_ERROR("Failed to create carrier rootfs");
         return -1;
@@ -42,7 +43,7 @@ int run_carrier_phase(
         return -1;
     }
 
-    if (bundle_packages(rootfs_dir) != 0)
+    if (bundle_packages(rootfs_dir, use_cache) != 0)
     {
         LOG_ERROR("Failed to bundle packages");
         return -1;

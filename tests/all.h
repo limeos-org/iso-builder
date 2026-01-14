@@ -7,10 +7,10 @@
 #include <cmocka.h>
 
 /*
- * Declarations for semistatic functions from `src` files. These aren't declared
- * in any `.h` files, so we declare them here for use in unit tests.
+ * Declarations for semistatic (semistatic = static in production, non-static
+ * in testing) functions from the `src` files. These aren't declared in any `.h`
+ * files, so we declare them here, so they can be used in the unit tests.
  */
 
-/* No semistatic function declarations exist at the moment. Place them here
- * once they are added to the codebase.
- */
+// From src/phases/preparation/download.c
+int compute_file_sha256(const char *path, char *out_hash, size_t hash_len);

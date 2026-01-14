@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     if (check_interrupted()) return 130;
 
     // Phase 3: Target - copy base, install packages, brand, package.
-    if (run_target_phase(base_rootfs_dir, target_rootfs_dir, target_tarball_path, version) != 0)
+    if (run_target_phase(base_rootfs_dir, target_rootfs_dir, target_tarball_path, version, use_cache) != 0)
     {
         exit_code = 1;
         goto cleanup;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
     if (check_interrupted()) return 130;
 
     // Phase 4: Carrier - copy base, install packages, embed target.
-    if (run_carrier_phase(base_rootfs_dir, carrier_rootfs_dir, target_tarball_path, components_dir, version) != 0)
+    if (run_carrier_phase(base_rootfs_dir, carrier_rootfs_dir, target_tarball_path, components_dir, version, use_cache) != 0)
     {
         exit_code = 1;
         goto cleanup;
