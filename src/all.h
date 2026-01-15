@@ -62,3 +62,4 @@
 #include "brand/splash.h"
 #include "brand/grub.h"
 #include "brand/sources.h"
+#include "brand/services.h"

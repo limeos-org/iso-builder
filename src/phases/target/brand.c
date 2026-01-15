@@ -35,6 +35,12 @@ int brand_target_rootfs(const char *path, const char *version)
         return -4;
     }
 
+    // Enable essential systemd services.
+    if (brand_enable_services(path) != 0)
+    {
+        return -5;
+    }
+
     LOG_INFO("Target branding applied successfully");
 
     return 0;
