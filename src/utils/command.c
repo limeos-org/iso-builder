@@ -413,7 +413,8 @@ int cleanup_apt_directories(const char *rootfs_path)
         return -1;
     }
 
-    // Recreate apt cache directory.
+    // Recreate apt cache directory structure.
+    snprintf(dir_path, sizeof(dir_path), "%s/var/cache/apt/archives/partial", rootfs_path);
     if (mkdir_p(dir_path) != 0)
     {
         LOG_WARNING("Failed to recreate apt cache directory");
@@ -427,7 +428,8 @@ int cleanup_apt_directories(const char *rootfs_path)
         return -2;
     }
 
-    // Recreate apt lists directory.
+    // Recreate apt lists directory structure.
+    snprintf(dir_path, sizeof(dir_path), "%s/var/lib/apt/lists/partial", rootfs_path);
     if (mkdir_p(dir_path) != 0)
     {
         LOG_WARNING("Failed to recreate apt lists directory");
