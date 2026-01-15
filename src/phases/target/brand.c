@@ -29,6 +29,12 @@ int brand_target_rootfs(const char *path, const char *version)
         return -3;
     }
 
+    // Configure APT package sources.
+    if (brand_apt_sources(path) != 0)
+    {
+        return -4;
+    }
+
     LOG_INFO("Target branding applied successfully");
 
     return 0;
