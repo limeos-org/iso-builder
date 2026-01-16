@@ -26,7 +26,7 @@ int run_base_phase(const char *rootfs_dir, int use_cache)
         return -1;
     }
 
-    // Strip unnecessary files from rootfs.
+    // Strip noncritical files from rootfs.
     if (strip_base_rootfs(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to strip base rootfs");

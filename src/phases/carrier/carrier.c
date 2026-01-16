@@ -13,47 +13,49 @@ int run_carrier_phase(
     int use_cache
 )
 {
+    // Create carrier rootfs from base.
     if (create_carrier_rootfs(base_rootfs_dir, rootfs_dir, use_cache) != 0)
     {
         LOG_ERROR("Failed to create carrier rootfs");
         return -1;
     }
 
+    // Apply carrier branding.
     if (brand_carrier_rootfs(rootfs_dir, version) != 0)
     {
         LOG_ERROR("Failed to brand carrier rootfs");
         return -1;
     }
 
-    if (cleanup_unnecessary_firmware(rootfs_dir) != 0)
-    {
-        LOG_WARNING("Some firmware could not be removed (continuing anyway)");
-    }
-
+    // Embed the target rootfs tarball.
     if (embed_target_rootfs(rootfs_dir, tarball_path) != 0)
     {
         LOG_ERROR("Failed to embed target rootfs");
         return -1;
     }
 
+    // Install LimeOS components (installer, etc.).
     if (install_carrier_components(rootfs_dir, components_dir) != 0)
     {
         LOG_ERROR("Failed to install components");
         return -1;
     }
 
+    // Configure init to auto-start the installer.
     if (configure_carrier_init(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to configure init");
         return -1;
     }
 
+    // Bundle boot-mode-specific packages (GRUB for BIOS/EFI).
     if (bundle_carrier_packages(rootfs_dir, use_cache) != 0)
     {
         LOG_ERROR("Failed to bundle packages");
         return -1;
     }
-    
+
+    // Clean up apt cache and lists.
     if (cleanup_apt_directories(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to cleanup apt directories");

@@ -235,36 +235,3 @@ int copy_kernel_and_initrd(const char *rootfs_path);
  */
 int cleanup_versioned_boot_files(const char *rootfs_path);
 
-/**
- * Removes unnecessary firmware from a rootfs.
- *
- * Removes WiFi, Bluetooth, server NIC, and audio DSP firmware while
- * preserving GPU firmware (for Plymouth) and CPU microcode (for stability).
- * Call after installing packages, as linux-image may reinstall firmware.
- *
- * @param rootfs_path The path to the rootfs directory.
- *
- * @return - `0` - Indicates success.
- * @return - `-1` - Indicates one or more removals failed.
- */
-int cleanup_unnecessary_firmware(const char *rootfs_path);
-
-/**
- * Blacklists wireless and bluetooth kernel modules.
- *
- * Creates /etc/modprobe.d/blacklist-wireless.conf to prevent modules from
- * loading and looking for firmware that was removed.
- *
- * @param rootfs_path The path to the rootfs directory.
- */
-void blacklist_wireless_modules(const char *rootfs_path);
-
-/**
- * Masks the systemd-rfkill service.
- *
- * Since wireless/bluetooth hardware is disabled, rfkill has nothing to
- * manage and would fail on boot.
- *
- * @param rootfs_path The path to the rootfs directory.
- */
-void mask_rfkill_service(const char *rootfs_path);
