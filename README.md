@@ -8,11 +8,9 @@
 
 ######
 
-This ISO builder creates bootable LimeOS installation media. It uses
-`debootstrap` to build a minimal Debian-based rootfs, then produces two systems
-from it: a target rootfs (the OS that gets installed) and a live rootfs (the
-live installer that runs from the ISO). The final output is a hybrid ISO image
-that supports both BIOS and UEFI boot.
+This ISO builder creates bootable LimeOS installation media. It builds a minimal
+Debian-based rootfs, splits it into target and live systems, and outputs a
+hybrid ISO supporting both BIOS and UEFI boot.
 
 > This application is still a **work in progress**. Some features may be
 > incomplete or subject to change while development continues. This note will
