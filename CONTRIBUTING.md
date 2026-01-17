@@ -214,12 +214,12 @@ The build process consists of five sequential phases:
        │
        ▼
 ┌─────────────┐
-│     Base    │  Create minimal Debian rootfs and strip it down.
+│    Base     │  Create minimal Debian rootfs and strip it down.
 └──────┬──────┘
        │
-   ┌───┴──────┐
-   │          │
-   ▼          ▼
+   ┌───┴────┐
+   │        │
+   ▼        ▼
 ┌──────┐ ┌──────┐
 │Target│ │ Live │  Add packages, apply LimeOS branding.
 └──┬───┘ └───┬──┘
