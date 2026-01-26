@@ -8,7 +8,7 @@
 
 #include "all.h"
 
-int brand_splash(const char *rootfs_path, const char *logo_path)
+int configure_plymouth(const char *rootfs_path, const char *logo_path)
 {
     char theme_dir[COMMAND_PATH_MAX_LENGTH];
 
@@ -24,7 +24,8 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
     // Construct the Plymouth theme directory path.
     snprintf(
         theme_dir, sizeof(theme_dir),
-        "%s" CONFIG_PLYMOUTH_THEMES_DIR "/" CONFIG_PLYMOUTH_THEME_NAME, rootfs_path
+        "%s" CONFIG_PLYMOUTH_THEMES_DIR "/" CONFIG_PLYMOUTH_THEME_NAME,
+        rootfs_path
     );
 
     // Create the Plymouth theme directory.
@@ -47,7 +48,11 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
 
     // Construct the theme file path.
     char theme_file_path[COMMAND_PATH_MAX_LENGTH];
-    snprintf(theme_file_path, sizeof(theme_file_path), "%s/" CONFIG_PLYMOUTH_THEME_NAME ".plymouth", theme_dir);
+    snprintf(
+        theme_file_path, sizeof(theme_file_path),
+        "%s/" CONFIG_PLYMOUTH_THEME_NAME ".plymouth",
+        theme_dir
+    );
 
     // Define the Plymouth theme configuration.
     const char *theme_cfg =
@@ -63,31 +68,48 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
     // Write the Plymouth theme file.
     if (write_file(theme_file_path, theme_cfg) != 0)
     {
+        LOG_ERROR("Failed to write Plymouth theme file: %s", theme_file_path);
         return -4;
     }
 
     // Construct the script file path.
     char script_path[COMMAND_PATH_MAX_LENGTH];
-    snprintf(script_path, sizeof(script_path), "%s/" CONFIG_PLYMOUTH_THEME_NAME ".script", theme_dir);
+    snprintf(
+        script_path, sizeof(script_path),
+        "%s/" CONFIG_PLYMOUTH_THEME_NAME ".script",
+        theme_dir
+    );
 
     // Define the Plymouth script.
     const char *script_cfg =
         "Window.SetBackgroundTopColor(0, 0, 0);\n"
         "Window.SetBackgroundBottomColor(0, 0, 0);\n"
-        "splash_image = Image(\"splash.png\");\n"
-        "sprite = Sprite(splash_image);\n"
-        "sprite.SetX(Window.GetWidth() / 2 - splash_image.GetWidth() / 2);\n"
-        "sprite.SetY(Window.GetHeight() / 2 - splash_image.GetHeight() / 2);\n";
+        "\n"
+        "# Load and scale logo to 15% of screen height.\n"
+        "logo = Image(\"splash.png\");\n"
+        "target_height = Window.GetHeight() * 0.15;\n"
+        "scale = target_height / logo.GetHeight();\n"
+        "scaled = logo.Scale(logo.GetWidth() * scale, target_height);\n"
+        "\n"
+        "# Center the scaled logo.\n"
+        "sprite = Sprite(scaled);\n"
+        "sprite.SetX(Window.GetWidth() / 2 - scaled.GetWidth() / 2);\n"
+        "sprite.SetY(Window.GetHeight() / 2 - scaled.GetHeight() / 2);\n";
 
     // Write the Plymouth script file.
     if (write_file(script_path, script_cfg) != 0)
     {
+        LOG_ERROR("Failed to write Plymouth script file: %s", script_path);
         return -5;
     }
 
     // Set LimeOS as the default Plymouth theme.
     char theme_cmd[COMMAND_PATH_MAX_LENGTH];
-    snprintf(theme_cmd, sizeof(theme_cmd), "plymouth-set-default-theme %s", CONFIG_PLYMOUTH_THEME_NAME);
+    snprintf(
+        theme_cmd, sizeof(theme_cmd),
+        "plymouth-set-default-theme %s",
+        CONFIG_PLYMOUTH_THEME_NAME
+    );
     if (run_chroot(rootfs_path, theme_cmd) != 0)
     {
         LOG_WARNING("Failed to set Plymouth theme (plymouth may not be installed)");
@@ -106,8 +128,11 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
     char initrd_pattern[COMMAND_PATH_MAX_LENGTH];
     char initrd_src[COMMAND_PATH_MAX_LENGTH];
     char initrd_dst[COMMAND_PATH_MAX_LENGTH];
-
-    snprintf(initrd_pattern, sizeof(initrd_pattern), "%s/boot/initrd.img-*", rootfs_path);
+    snprintf(
+        initrd_pattern, sizeof(initrd_pattern),
+        "%s/boot/initrd.img-*",
+        rootfs_path
+    );
     if (find_first_glob(initrd_pattern, initrd_src, sizeof(initrd_src)) == 0)
     {
         snprintf(initrd_dst, sizeof(initrd_dst), "%s/boot/initrd.img", rootfs_path);
@@ -118,6 +143,6 @@ int brand_splash(const char *rootfs_path, const char *logo_path)
     }
 
     LOG_INFO("Plymouth splash configured successfully");
-
+    
     return 0;
 }

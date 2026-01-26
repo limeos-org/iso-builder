@@ -109,11 +109,10 @@ First, ensure the required commands are available on your system.
 ```bash
 sudo apt install \
    debootstrap \
-   isolinux \
-   syslinux-common \
    xorriso \
+   grub-pc-bin \
    grub-efi-amd64-bin \
-   dosfstools \
+   mtools \
    squashfs-tools
 ```
 
@@ -122,11 +121,10 @@ To verify all runtime dependencies are installed, run:
 ```bash
 dpkg -s \
    debootstrap \
-   isolinux \
-   syslinux-common \
    xorriso \
+   grub-pc-bin \
    grub-efi-amd64-bin \
-   dosfstools \
+   mtools \
    squashfs-tools >/dev/null 2>&1 && echo "OK"
 ```
 
@@ -152,18 +150,6 @@ If you want to use local LimeOS component binaries (e.g.,
 `limeos-installation-wizard`) instead of having the ISO builder download them,
 place them in `./bin`. The ISO builder will automatically detect and prefer them
 over downloads, as long as the filenames match the expected names.
-
-The ISO builder uses caching to speed up subsequent builds:
-
-- **Base rootfs cache**: `/root/.cache/limeos-iso-builder/base-rootfs.tar.gz`
-- **APT cache**: `/root/.cache/limeos-iso-builder/packages/apt/`
-- **Bootloader cache**: `/root/.cache/limeos-iso-builder/packages/` + `/bios/` & `/efi/`
-
-The base rootfs cache stores the stripped Debian rootfs tarball. The APT cache
-is bind-mounted into the chroot during package installation. The bootloader
-cache stores GRUB `.deb` packages for BIOS and EFI boot modes.
-
-To force a fresh build without using any cache, use the `--no-cache` flag.
 
 ### Testing the ISO builder
 
@@ -204,8 +190,8 @@ The build process consists of five sequential phases:
    the installer to auto-start, and bundles boot-mode-specific packages
    (GRUB for BIOS/EFI).
 
-5. **Assembly** - Configures ISOLINUX (BIOS boot) and GRUB (EFI boot), creates
-   a squashfs of the live rootfs, and assembles the final hybrid ISO image.
+5. **Assembly** - Configures GRUB for both BIOS and EFI boot, creates a
+   squashfs of the live rootfs, and assembles the final hybrid ISO image.
 
 ```
 ┌─────────────┐

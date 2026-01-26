@@ -19,5 +19,6 @@ void log_message(const char* severity, const char* file, int line, const char* m
     vsnprintf(formatted_message, sizeof(formatted_message), message, vargs);
     va_end(vargs);
 
+    // Print the formatted log message with timestamp and source location.
     printf("[%s][%s:%d] %s: %s\n", time_string, file, line, severity, formatted_message);
 }

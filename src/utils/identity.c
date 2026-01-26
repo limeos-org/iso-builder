@@ -1,18 +1,14 @@
-/**
- * This code provides OS identity branding (os-release, issue files).
- */
-
 #include "all.h"
 
-/** Maximum length for branding file content. */
-#define BRAND_CONTENT_MAX_LENGTH 512
+/** Maximum length for identity file content. */
+#define IDENTITY_CONTENT_MAX_LENGTH 512
 
-int brand_os_identity(const char *rootfs_path, const char *version)
+int write_os_identity(const char *rootfs_path, const char *version)
 {
-    char content[BRAND_CONTENT_MAX_LENGTH];
+    char content[IDENTITY_CONTENT_MAX_LENGTH];
     char path[COMMAND_PATH_MAX_LENGTH];
 
-    LOG_INFO("Applying OS identity branding...");
+    LOG_INFO("Writing OS identity files...");
 
     // Strip the 'v' prefix if present for cleaner version display.
     const char *clean_version = skip_version_prefix(version);
@@ -34,10 +30,11 @@ int brand_os_identity(const char *rootfs_path, const char *version)
         return -1;
     }
 
-    // Write /etc/issue for local login prompts.
-    snprintf(content, sizeof(content),
-        CONFIG_OS_NAME " %s \\n \\l\n\n", clean_version);
-
+    // Write `/etc/issue` for local login prompts.
+    snprintf(
+        content, sizeof(content),
+        CONFIG_OS_NAME " %s \\n \\l\n\n", clean_version
+    );
     snprintf(path, sizeof(path), "%s/etc/issue", rootfs_path);
     if (write_file(path, content) != 0)
     {
@@ -45,9 +42,8 @@ int brand_os_identity(const char *rootfs_path, const char *version)
         return -2;
     }
 
-    // Write /etc/issue.net for network login prompts.
+    // Write `/etc/issue.net` for network login prompts.
     snprintf(content, sizeof(content), CONFIG_OS_NAME " %s\n", clean_version);
-
     snprintf(path, sizeof(path), "%s/etc/issue.net", rootfs_path);
     if (write_file(path, content) != 0)
     {
@@ -55,7 +51,16 @@ int brand_os_identity(const char *rootfs_path, const char *version)
         return -3;
     }
 
-    LOG_INFO("OS identity branding applied successfully");
+    // Clear machine-id so systemd generates a unique one on first boot.
+    // An empty file signals "uninitialized", systemd will populate it.
+    snprintf(path, sizeof(path), "%s/etc/machine-id", rootfs_path);
+    if (write_file(path, "") != 0)
+    {
+        LOG_ERROR("Failed to clear /etc/machine-id");
+        return -4;
+    }
+
+    LOG_INFO("OS identity files written successfully");
 
     return 0;
 }

@@ -16,4 +16,4 @@
  * @return - `-4` - Failed to write theme config.
  * @return - `-5` - Failed to write theme script.
  */
-int brand_splash(const char *rootfs_path, const char *logo_path);
+int configure_plymouth(const char *rootfs_path, const char *logo_path);

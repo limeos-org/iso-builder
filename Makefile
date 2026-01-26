@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -g -MMD -MP
 LIBS = -lcurl -ljson-c -lcrypto
 
 # ---
@@ -12,10 +12,10 @@ BINDIR = bin
 
 TARGET = $(BINDIR)/limeos-iso-builder
 
-SOURCES = $(shell find $(SRCDIR) -name '*.c')
+SOURCES = $(sort $(shell find $(SRCDIR) -name '*.c'))
 OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
-INCLUDES = $(shell find $(SRCDIR) -type d -exec printf "-I{} " \;)
+INCLUDES = $(sort $(shell find $(SRCDIR) -type d -exec printf "-I{} " \;))
 CFLAGS += $(INCLUDES)
 
 all: $(TARGET)
@@ -29,7 +29,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
+	rm -rf $(OBJDIR) $(TARGET) $(TESTBINDIR)
 
 # ---
 # Tests Configuration
@@ -40,13 +40,13 @@ TESTOBJDIR = obj/tests
 TESTBINDIR = bin/tests
 TESTSRCOBJDIR = obj/tests-src
 
-TEST_SOURCES = $(shell find $(TESTDIR) -name '*.c')
+TEST_SOURCES = $(sort $(shell find $(TESTDIR) -name '*.c'))
 TEST_OBJS = $(TEST_SOURCES:$(TESTDIR)/%.c=$(TESTOBJDIR)/%.o)
 TEST_BINARIES = $(TEST_SOURCES:$(TESTDIR)/%.c=$(TESTBINDIR)/%)
 TEST_SRC_OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(TESTSRCOBJDIR)/%.o)
 TEST_SRC_OBJECTS_NO_MAIN = $(filter-out $(TESTSRCOBJDIR)/main.o,$(TEST_SRC_OBJECTS))
 
-TEST_CFLAGS = -Wall -Wextra -g $(INCLUDES) -Itests -DTESTING
+TEST_CFLAGS = -Wall -Wextra -g -MMD -MP $(INCLUDES) -Itests -DTESTING
 TEST_LIBS = $(LIBS) -lcmocka
 
 $(TESTSRCOBJDIR)/%.o: $(SRCDIR)/%.c
@@ -86,3 +86,8 @@ test-clean:
 
 .PRECIOUS: $(TEST_OBJS) $(TEST_SRC_OBJECTS)
 .PHONY: all clean test test-clean
+
+# Include generated dependency files (if they exist)
+-include $(OBJECTS:.o=.d)
+-include $(TEST_OBJS:.o=.d)
+-include $(TEST_SRC_OBJECTS:.o=.d)

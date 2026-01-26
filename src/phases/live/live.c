@@ -9,21 +9,20 @@ int run_live_phase(
     const char *rootfs_dir,
     const char *tarball_path,
     const char *components_dir,
-    const char *version,
-    int use_cache
+    const char *version
 )
 {
     // Create live rootfs from base.
-    if (create_live_rootfs(base_rootfs_dir, rootfs_dir, use_cache) != 0)
+    if (create_live_rootfs(base_rootfs_dir, rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to create live rootfs");
         return -1;
     }
 
-    // Apply live branding.
-    if (brand_live_rootfs(rootfs_dir, version) != 0)
+    // Configure live rootfs.
+    if (configure_live_rootfs(rootfs_dir, version) != 0)
     {
-        LOG_ERROR("Failed to brand live rootfs");
+        LOG_ERROR("Failed to configure live rootfs");
         return -1;
     }
 
@@ -41,10 +40,10 @@ int run_live_phase(
         return -1;
     }
 
-    // Configure init to auto-start the installer.
-    if (configure_live_init(rootfs_dir) != 0)
+    // Configure autostart to launch installer on boot.
+    if (configure_live_autostart(rootfs_dir) != 0)
     {
-        LOG_ERROR("Failed to configure init");
+        LOG_ERROR("Failed to configure autostart");
         return -1;
     }
 
@@ -57,7 +56,7 @@ int run_live_phase(
 
     // Bundle boot-mode-specific packages (GRUB for BIOS/EFI). Must happen after
     // cleanup so the packages remain in /var/cache/apt/archives/.
-    if (bundle_live_packages(rootfs_dir, use_cache) != 0)
+    if (bundle_live_packages(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to bundle packages");
         return -1;

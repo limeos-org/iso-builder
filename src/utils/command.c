@@ -206,6 +206,7 @@ int rm_rf(const char *path)
     char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
     if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
+        LOG_ERROR("Failed to quote path for rm_rf: %s", path);
         return -2;
     }
 
@@ -349,6 +350,7 @@ int write_file(const char *path, const char *content)
     }
 
     fclose(file);
+    
     return 0;
 }
 
@@ -369,6 +371,7 @@ int find_first_glob(const char *pattern, char *out_path, size_t buffer_length)
 
     // Free glob resources.
     globfree(&glob_result);
+
     return 0;
 }
 
@@ -397,6 +400,7 @@ int create_secure_tmpdir(char *out_path, size_t buffer_length)
     out_path[buffer_length - 1] = '\0';
 
     LOG_INFO("Created secure build directory: %s", out_path);
+
     return 0;
 }
 

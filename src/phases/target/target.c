@@ -6,20 +6,20 @@
 
 int run_target_phase(
     const char *base_rootfs_dir, const char *rootfs_dir,
-    const char *tarball_path, const char *version, int use_cache
+    const char *tarball_path, const char *version
 )
 {
     // Create target rootfs from base.
-    if (create_target_rootfs(base_rootfs_dir, rootfs_dir, use_cache) != 0)
+    if (create_target_rootfs(base_rootfs_dir, rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to create target rootfs");
         return -1;
     }
 
-    // Apply target branding.
-    if (brand_target_rootfs(rootfs_dir, version) != 0)
+    // Configure target rootfs.
+    if (configure_target_rootfs(rootfs_dir, version) != 0)
     {
-        LOG_ERROR("Failed to brand target rootfs");
+        LOG_ERROR("Failed to configure target rootfs");
         return -1;
     }
 

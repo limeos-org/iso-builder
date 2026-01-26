@@ -1,11 +1,11 @@
 /**
- * This code is responsible for testing the OS identity branding functions,
+ * This code is responsible for testing the OS identity functions,
  * including os-release and issue file generation.
  */
 
 #include "../../all.h"
 
-/** Test rootfs path for branding tests. */
+/** Test rootfs path for identity tests. */
 static char test_rootfs[256];
 
 /** Sets up the test environment before each test. */
@@ -14,7 +14,11 @@ static int setup(void **state)
     (void)state;
 
     // Create a unique test directory.
-    snprintf(test_rootfs, sizeof(test_rootfs), "/tmp/iso-builder-test-brand-%d", getpid());
+    snprintf(
+        test_rootfs, sizeof(test_rootfs),
+        "/tmp/iso-builder-test-identity-%d",
+        getpid()
+    );
     mkdir_p(test_rootfs);
 
     // Create the /etc directory.
@@ -35,23 +39,34 @@ static int teardown(void **state)
     return 0;
 }
 
-/** Verifies brand_os_identity() creates all identity files with correct content. */
-static void test_brand_os_identity_creates_files(void **state)
+/** Verifies write_os_identity() creates all identity files with correct content. */
+static void test_write_os_identity_creates_files(void **state)
 {
     (void)state;
 
-    // Apply branding.
-    int result = brand_os_identity(test_rootfs, "1.0.0");
+    // Write identity files.
+    int result = write_os_identity(test_rootfs, "1.0.0");
     assert_int_equal(0, result);
 
     // Verify all identity files exist.
     char os_release_path[512];
     char issue_path[512];
     char issue_net_path[512];
-    snprintf(os_release_path, sizeof(os_release_path), "%s/etc/os-release", test_rootfs);
-    snprintf(issue_path, sizeof(issue_path), "%s/etc/issue", test_rootfs);
-    snprintf(issue_net_path, sizeof(issue_net_path), "%s/etc/issue.net", test_rootfs);
-
+    snprintf(
+        os_release_path, sizeof(os_release_path),
+        "%s/etc/os-release",
+        test_rootfs
+    );
+    snprintf(
+        issue_path, sizeof(issue_path),
+        "%s/etc/issue",
+        test_rootfs
+    );
+    snprintf(
+        issue_net_path, sizeof(issue_net_path),
+        "%s/etc/issue.net",
+        test_rootfs
+    );
     assert_int_equal(1, file_exists(os_release_path));
     assert_int_equal(1, file_exists(issue_path));
     assert_int_equal(1, file_exists(issue_net_path));
@@ -70,13 +85,13 @@ static void test_brand_os_identity_creates_files(void **state)
     assert_non_null(strstr(content, "ID_LIKE=" CONFIG_OS_BASE_ID));
 }
 
-/** Verifies brand_os_identity() strips v prefix from version. */
-static void test_brand_os_identity_strips_v_prefix(void **state)
+/** Verifies write_os_identity() strips v prefix from version. */
+static void test_write_os_identity_strips_v_prefix(void **state)
 {
     (void)state;
 
-    // Apply branding with v prefix.
-    int result = brand_os_identity(test_rootfs, "v2.0.0");
+    // Write identity files with v prefix.
+    int result = write_os_identity(test_rootfs, "v2.0.0");
     assert_int_equal(0, result);
 
     // Read os-release and verify version doesn't have v prefix.
@@ -98,9 +113,9 @@ static void test_brand_os_identity_strips_v_prefix(void **state)
 int main(void)
 {
     const struct CMUnitTest tests[] = {
-        // brand_os_identity tests
-        cmocka_unit_test_setup_teardown(test_brand_os_identity_creates_files, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_brand_os_identity_strips_v_prefix, setup, teardown),
+        // write_os_identity tests
+        cmocka_unit_test_setup_teardown(test_write_os_identity_creates_files, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_write_os_identity_strips_v_prefix, setup, teardown),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

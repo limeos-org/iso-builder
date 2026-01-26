@@ -1,7 +1,7 @@
 #pragma once
 
 /**
- * Configures init to launch the installer directly.
+ * Configures the live system to autostart the installer.
  *
  * Sets up the live rootfs so it boots directly into the installation wizard
  * without a login prompt or shell.
@@ -14,4 +14,4 @@
  * @return - `-3` - Indicates default target set failure.
  * @return - `-4` - Indicates getty disable failure.
  */
-int configure_live_init(const char *rootfs_path);
+int configure_live_autostart(const char *rootfs_path);

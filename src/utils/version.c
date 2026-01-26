@@ -118,5 +118,17 @@ int compare_versions(const char *v1, const char *v2)
         }
     }
 
-    return 0;
+    // Check if both strings are fully consumed.
+    if (*p1 == '\0' && *p2 == '\0')
+    {
+        return 0;
+    }
+
+    // Version with more components is greater (e.g., "1.2.3" > "1.2").
+    if (*p1 == '\0')
+    {
+        return -1;
+    }
+
+    return 1;
 }

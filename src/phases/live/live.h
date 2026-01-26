@@ -12,7 +12,6 @@
  * @param tarball_path The path to the target tarball to embed.
  * @param components_dir The directory containing downloaded components.
  * @param version The version string for OS branding.
- * @param use_cache Whether to use package caching.
  *
  * @return - `0` - Indicates success.
  * @return - `-1` - Indicates failure.
@@ -22,6 +21,5 @@ int run_live_phase(
     const char *rootfs_dir,
     const char *tarball_path,
     const char *components_dir,
-    const char *version,
-    int use_cache
+    const char *version
 );

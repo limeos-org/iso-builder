@@ -4,9 +4,9 @@
 /**
  * Validates that all required dependencies are available.
  *
- * Checks for required files (isolinux, syslinux modules, assets) and
- * required commands (debootstrap, mksquashfs, xorriso, etc.) before
- * starting the build process.
+ * Checks for required files (assets) and required commands
+ * (debootstrap, mksquashfs, grub-mkrescue, etc.) before starting
+ * the build process.
  *
  * @return - `0` - All dependencies are satisfied.
  * @return - `1` - One or more dependencies are missing.

@@ -7,9 +7,6 @@
 /** The path to the splash logo image. */
 #define CONFIG_SPLASH_LOGO_PATH "./assets/splash.png"
 
-/** The path to the black background image for clean boot. */
-#define CONFIG_BLACK_PNG_PATH "./assets/black.png"
-
 /**
  * The prefix for output ISO filenames.
  *
@@ -46,8 +43,43 @@
 // Boot Configuration
 // ---
 
-/** The kernel command line parameters for boot. */
-#define CONFIG_BOOT_KERNEL_PARAMS "boot=live quiet splash loglevel=0"
+/**
+ * Kernel command line parameters for live boot (ISO).
+ *
+ * TTY policy: tty1 is graphical-only, tty2 is diagnostics-only.
+ * Kernel and systemd output is suppressed on tty1 via quiet/loglevel.
+ */
+#define CONFIG_LIVE_KERNEL_PARAMS \
+    "boot=live "                        /* Boot from live system (live-boot)*/ \
+    "quiet "                            /* Minimize boot messages.          */ \
+    "splash "                           /* Show Plymouth splash screen.     */ \
+    "loglevel=0 "                       /* Suppress kernel log messages.    */ \
+    "vt.global_cursor_default=0 "       /* Hide the blinking cursor.        */ \
+    "systemd.show_status=false "        /* Hide systemd [OK]/[FAILED] logs. */ \
+    "rd.systemd.show_status=false "     /* Hide initramfs systemd status.   */ \
+    "rd.udev.log_level=3 "              /* Hide udev messages in initramfs. */ \
+    "amdgpu.modeset=1 "                 /* Force amdgpu KMS early.          */ \
+    "radeon.modeset=1 "                 /* Force radeon KMS early.          */ \
+    "nouveau.modeset=1 "                /* Force nouveau KMS early.         */ \
+    "i915.modeset=1"                    /* Force i915 KMS early.            */
+
+/**
+ * Kernel command line parameters for target system (installed).
+ *
+ * Same TTY policy as live, minus the live-boot specific param.
+ */
+#define CONFIG_TARGET_KERNEL_PARAMS \
+    "quiet "                            /* Minimize boot messages.          */ \
+    "splash "                           /* Show Plymouth splash screen.     */ \
+    "loglevel=0 "                       /* Suppress kernel log messages.    */ \
+    "vt.global_cursor_default=0 "       /* Hide the blinking cursor.        */ \
+    "systemd.show_status=false "        /* Hide systemd [OK]/[FAILED] logs. */ \
+    "rd.systemd.show_status=false "     /* Hide initramfs systemd status.   */ \
+    "rd.udev.log_level=3 "              /* Hide udev messages in initramfs. */ \
+    "amdgpu.modeset=1 "                 /* Force amdgpu KMS early.          */ \
+    "radeon.modeset=1 "                 /* Force radeon KMS early.          */ \
+    "nouveau.modeset=1 "                /* Force nouveau KMS early.         */ \
+    "i915.modeset=1"                    /* Force i915 KMS early.            */
 
 /** The default kernel image path within the ISO. */
 #define CONFIG_BOOT_KERNEL_PATH "/boot/vmlinuz"
@@ -57,31 +89,6 @@
 
 /** The GRUB menu entry name displayed during boot. */
 #define CONFIG_GRUB_MENU_ENTRY_NAME "LimeOS Installer"
-
-// ---
-// System Paths (Host Dependencies)
-// ---
-
-/** The path to isolinux.bin on the host system. */
-#define CONFIG_ISOLINUX_BIN_PATH "/usr/lib/ISOLINUX/isolinux.bin"
-
-/** The path to the MBR template for hybrid ISO. */
-#define CONFIG_ISOLINUX_MBR_PATH "/usr/lib/ISOLINUX/isohdpfx.bin"
-
-/** The path to ldlinux.c32 on the host system. */
-#define CONFIG_LDLINUX_PATH "/usr/lib/syslinux/modules/bios/ldlinux.c32"
-
-/** The path to vesamenu.c32 on the host system. */
-#define CONFIG_VESAMENU_C32_PATH "/usr/lib/syslinux/modules/bios/vesamenu.c32"
-
-/** The path to libutil.c32 on the host system. */
-#define CONFIG_LIBUTIL_C32_PATH "/usr/lib/syslinux/modules/bios/libutil.c32"
-
-/** The path to libcom32.c32 on the host system. */
-#define CONFIG_LIBCOM32_C32_PATH "/usr/lib/syslinux/modules/bios/libcom32.c32"
-
-/** The path to the GRUB EFI binary on the host system. */
-#define CONFIG_GRUB_EFI_PATH "/usr/lib/grub/x86_64-efi/monolithic/grubx64.efi"
 
 // ---
 // Plymouth Configuration
@@ -136,15 +143,17 @@
  * Minimal environment to run the installation wizard.
  */
 #define CONFIG_LIVE_PACKAGES \
-    "linux-image-amd64 "  /* Kernel                                         */ \
-    "systemd-sysv "       /* Init system (SysV compat)                      */ \
-    "live-boot "          /* Live system boot scripts                       */ \
-    "plymouth "           /* Boot splash screen                             */ \
-    "plymouth-themes "    /* Splash screen themes                           */ \
-    "libncurses6 "        /* Terminal UI library (installer TUI)            */ \
-    "parted "             /* Disk partitioning (installer)                  */ \
-    "dosfstools "         /* FAT filesystem tools (EFI partition)           */ \
-    "e2fsprogs"           /* ext4 filesystem tools (root partition)         */
+    "linux-image-amd64 "      /* Kernel                                     */ \
+    "firmware-amd-graphics "  /* AMD GPU firmware (amdgpu, radeon)          */ \
+    "firmware-misc-nonfree "  /* Intel/misc GPU firmware (i915, etc)        */ \
+    "systemd-sysv "           /* Init system (SysV compat)                  */ \
+    "live-boot "              /* Live system boot scripts                   */ \
+    "plymouth "               /* Boot splash screen                         */ \
+    "plymouth-themes "        /* Splash screen themes                       */ \
+    "libncurses6 "            /* Terminal UI library (installer TUI)        */ \
+    "parted "                 /* Disk partitioning (installer)              */ \
+    "dosfstools "             /* FAT filesystem tools (EFI partition)       */ \
+    "e2fsprogs"               /* ext4 filesystem tools (root partition)     */
 
 /**
  * Packages for the target rootfs (installed to disk).
@@ -155,6 +164,8 @@
  */
 #define CONFIG_TARGET_PACKAGES \
     "linux-image-amd64 "       /* Kernel                                    */ \
+    "firmware-amd-graphics "   /* AMD GPU firmware (amdgpu, radeon)         */ \
+    "firmware-misc-nonfree "   /* Intel/misc GPU firmware (i915, etc)       */ \
     "systemd "                 /* Init system and service manager           */ \
     "systemd-sysv "            /* SysV init compatibility layer             */ \
     "dbus "                    /* IPC message bus                           */ \
@@ -181,7 +192,8 @@
     "libxi6 "                  /* X Input extension (WM dep)                */ \
     "libxrandr2 "              /* X RandR extension (WM dep)                */ \
     "libxfixes3 "              /* X Fixes extension (WM dep)                */ \
-    "libcairo2 "               /* Cairo graphics library (WM dep)           */
+    "libcairo2 "               /* Cairo graphics library (WM dep)           */ \
+    "xdm "                     /* Display manager (temporary)               */
 
 /**
  * BIOS-specific bootloader packages to bundle.
@@ -225,13 +237,6 @@ static const Component CONFIG_OPTIONAL_COMPONENTS[] = {
 /** The number of optional components. */
 #define CONFIG_OPTIONAL_COMPONENTS_COUNT \
     (int)(sizeof(CONFIG_OPTIONAL_COMPONENTS) / sizeof(CONFIG_OPTIONAL_COMPONENTS[0]))
-
-// ---
-// Cache Configuration
-// ---
-
-/** The cache directory name under XDG_CACHE_HOME or ~/.cache. */
-#define CONFIG_CACHE_DIR_NAME "limeos-iso-builder"
 
 // ---
 // Service Configuration

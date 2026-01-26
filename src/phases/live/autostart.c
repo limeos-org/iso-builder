@@ -1,10 +1,17 @@
 /**
- * This code is responsible for configuring the init system in the
- * live rootfs.
+ * This code is responsible for configuring the live system to autostart
+ * the installation wizard.
  */
 
 #include "all.h"
 
+/**
+ * Writes the installer systemd service unit file.
+ *
+ * @return - `0` - Success.
+ * @return - `-1` - Directory creation failure.
+ * @return - `-2` - Service file write failure.
+ */
 static int write_installer_service(const char *rootfs_path)
 {
     char path[COMMAND_PATH_MAX_LENGTH];
@@ -46,17 +53,28 @@ static int write_installer_service(const char *rootfs_path)
     );
     if (write_file(path, service_content) != 0)
     {
-        return -1;
+        return -2;
     }
 
     return 0;
 }
 
+/**
+ * Enables the installer service to start at boot.
+ *
+ * @return - `0` - Success.
+ * @return - `-1` - Directory creation failure.
+ * @return - `-2` - Symlink creation failure.
+ */
 static int enable_installer_service(const char *rootfs_path)
 {
     // Create the "target wants" directory.
     char wants_dir[COMMAND_PATH_MAX_LENGTH];
-    snprintf(wants_dir, sizeof(wants_dir), "%s/etc/systemd/system/multi-user.target.wants", rootfs_path);
+    snprintf(
+        wants_dir, sizeof(wants_dir),
+        "%s/etc/systemd/system/multi-user.target.wants",
+        rootfs_path
+    );
     if (mkdir_p(wants_dir) != 0)
     {
         return -1;
@@ -64,21 +82,35 @@ static int enable_installer_service(const char *rootfs_path)
 
     // Create symlink to enable the service.
     char link_path[COMMAND_PATH_MAX_LENGTH];
-    snprintf(link_path, sizeof(link_path), "%s/" CONFIG_INSTALLER_SERVICE_NAME ".service", wants_dir);
+    snprintf(
+        link_path, sizeof(link_path),
+        "%s/" CONFIG_INSTALLER_SERVICE_NAME ".service",
+        wants_dir
+    );
     if (symlink_file("../" CONFIG_INSTALLER_SERVICE_NAME ".service", link_path) != 0)
     {
         LOG_ERROR("Failed to enable installer service");
-        return -1;
+        return -2;
     }
 
     return 0;
 }
 
+/**
+ * Sets the default systemd target to multi-user.
+ *
+ * @return - `0` - Success.
+ * @return - `-1` - Symlink creation failure.
+ */
 static int set_default_systemd_target(const char *rootfs_path)
 {
     // Set multi-user target as default.
     char link_path[COMMAND_PATH_MAX_LENGTH];
-    snprintf(link_path, sizeof(link_path), "%s/etc/systemd/system/default.target", rootfs_path);
+    snprintf(
+        link_path, sizeof(link_path),
+        "%s/etc/systemd/system/default.target",
+        rootfs_path
+    );
     if (symlink_file("/lib/systemd/system/multi-user.target", link_path) != 0)
     {
         LOG_ERROR("Failed to set default target");
@@ -88,6 +120,12 @@ static int set_default_systemd_target(const char *rootfs_path)
     return 0;
 }
 
+/**
+ * Disables getty on tty1 to prevent conflict with installer.
+ *
+ * @return - `0` - Success.
+ * @return - `-1` - File removal failure.
+ */
 static int disable_tty1_getty(const char *rootfs_path)
 {
     // Remove getty on tty1 to prevent conflict with installer.
@@ -106,9 +144,9 @@ static int disable_tty1_getty(const char *rootfs_path)
     return 0;
 }
 
-int configure_live_init(const char *rootfs_path)
+int configure_live_autostart(const char *rootfs_path)
 {
-    LOG_INFO("Configuring live init system...");
+    LOG_INFO("Configuring live autostart...");
 
     // Write the installer service unit file.
     if (write_installer_service(rootfs_path) != 0)
@@ -134,7 +172,7 @@ int configure_live_init(const char *rootfs_path)
         return -4;
     }
 
-    LOG_INFO("Live init system configured successfully");
+    LOG_INFO("Live autostart configured successfully");
 
     return 0;
 }

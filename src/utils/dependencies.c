@@ -7,23 +7,14 @@
 
 // Required files that must exist on the host system.
 static const char *required_files[] = {
-    CONFIG_SPLASH_LOGO_PATH,
-    CONFIG_BLACK_PNG_PATH,
-    CONFIG_ISOLINUX_BIN_PATH,
-    CONFIG_ISOLINUX_MBR_PATH,
-    CONFIG_LDLINUX_PATH,
-    CONFIG_VESAMENU_C32_PATH,
-    CONFIG_LIBUTIL_C32_PATH,
-    CONFIG_LIBCOM32_C32_PATH
+    CONFIG_SPLASH_LOGO_PATH
 };
 
 // Required commands that must be available in PATH.
 static const char *required_commands[] = {
     "debootstrap",
     "mksquashfs",
-    "xorriso",
-    "mkfs.fat",
-    "grub-mkimage",
+    "grub-mkrescue",
     "tar",
     "chroot"
 };

@@ -3,8 +3,8 @@
 /**
  * Runs the assembly phase.
  *
- * Configures bootloaders (GRUB, isolinux), sets up the splash screen,
- * and creates the final bootable hybrid ISO image.
+ * Configures GRUB for BIOS and EFI boot, creates a squashfs of
+ * the live rootfs, and assembles the final bootable hybrid ISO image.
  *
  * @param rootfs_dir The live rootfs directory.
  * @param version The version string for the ISO filename.

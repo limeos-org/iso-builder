@@ -5,7 +5,7 @@
 
 #include "all.h"
 
-int create_live_rootfs(const char *base_path, const char *path, int use_cache)
+int create_live_rootfs(const char *base_path, const char *path)
 {
     LOG_INFO("Creating live rootfs at %s", path);
 
@@ -35,29 +35,26 @@ int create_live_rootfs(const char *base_path, const char *path, int use_cache)
         return -1;
     }
 
-    // Set up package cache mount if caching is enabled.
-    int package_cache_mounted = 0;
-    if (use_cache && setup_package_cache_mount(path) == 0)
-    {
-        package_cache_mounted = 1;
-    }
-
     // Install live-specific packages.
     LOG_INFO("Installing live environment packages...");
     int install_result = run_chroot(path,
         "apt-get install -y --no-install-recommends " CONFIG_LIVE_PACKAGES);
-
-    // Tear down package cache mount if it was set up.
-    if (package_cache_mounted)
-    {
-        teardown_package_cache_mount(path);
-    }
 
     // Check if package installation succeeded.
     if (install_result != 0)
     {
         LOG_ERROR("Failed to install required packages");
         return -2;
+    }
+
+    // Add GPU drivers for early KMS initialization. Must be done AFTER package 
+    // install because `dpkg` overwrites pre-seeded files. `brand_live_rootfs()`
+    // will call update-initramfs later.
+    if (run_chroot(path,
+        "printf 'amdgpu\\ni915\\nnouveau\\nradeon\\n' >> /etc/initramfs-tools/modules") != 0)
+    {
+        LOG_ERROR("Failed to add GPU drivers to initramfs modules");
+        return -3;
     }
 
     // Clean APT cache to remove downloaded .deb files.
