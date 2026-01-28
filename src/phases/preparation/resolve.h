@@ -14,9 +14,11 @@
  * @param buffer_length The size of the output buffer.
  *
  * @return - `0` - Indicates successful resolution.
- * @return - `-1` - Indicates a network or API failure.
- * @return - `-2` - Indicates no matching version was found.
+ * @return - `-1` - Indicates invalid version format.
+ * @return - `-2` - Indicates a network or API failure.
  * @return - `-3` - Indicates JSON parsing failure.
+ * @return - `-4` - Indicates unexpected API response format.
+ * @return - `-5` - Indicates no matching version was found.
  */
 int resolve_version(
     const char *component,

@@ -82,7 +82,7 @@ static int fetch_releases_json(
     if (!curl)
     {
         free(buffer.data);
-        return -1;
+        return -2;
     }
 
     // Set up required headers for GitHub API.
@@ -114,7 +114,7 @@ static int fetch_releases_json(
     {
         LOG_ERROR("GitHub API request failed: %s", curl_easy_strerror(result));
         free(buffer.data);
-        return -1;
+        return -3;
     }
 
     // Check for HTTP errors.
@@ -122,7 +122,7 @@ static int fetch_releases_json(
     {
         LOG_ERROR("GitHub API returned HTTP %ld", http_code);
         free(buffer.data);
-        return -1;
+        return -4;
     }
 
     // Transfer ownership of the buffer to the caller.
@@ -139,18 +139,18 @@ int resolve_version(
 )
 {
     // Extract the target major version from the user-provided version.
-    int target_major = extract_major_version(version);
+    int target_major = get_version_major(version);
     if (target_major < 0)
     {
         LOG_ERROR("Invalid version format: %s", version);
-        return -2;
+        return -1;
     }
 
     // Fetch the releases JSON from GitHub API.
     char *json_data = NULL;
     if (fetch_releases_json(component, &json_data) != 0)
     {
-        return -1;
+        return -2;
     }
 
     // Parse the JSON response.
@@ -168,7 +168,7 @@ int resolve_version(
         LOG_ERROR("Unexpected GitHub API response format");
         json_object_put(root);
         free(json_data);
-        return -3;
+        return -4;
     }
 
     // Iterate through releases to find the best matching version.
@@ -192,7 +192,7 @@ int resolve_version(
         }
 
         // Check if this release matches the target major version.
-        int release_major = extract_major_version(tag_name);
+        int release_major = get_version_major(tag_name);
         if (release_major != target_major)
         {
             continue;
@@ -232,7 +232,7 @@ int resolve_version(
         );
         json_object_put(root);
         free(json_data);
-        return -2;
+        return -5;
     }
 
     // Copy the resolved version to the output buffer.

@@ -7,8 +7,8 @@
 
 static void mask_rfkill_service(const char *rootfs_path)
 {
-    char dir_path[COMMAND_PATH_MAX_LENGTH];
-    char mask_path[COMMAND_PATH_MAX_LENGTH];
+    char dir_path[COMMON_MAX_PATH_LENGTH];
+    char mask_path[COMMON_MAX_PATH_LENGTH];
 
     // Construct the systemd system directory path.
     snprintf(dir_path, sizeof(dir_path), "%s/etc/systemd/system", rootfs_path);
@@ -37,7 +37,7 @@ static void mask_rfkill_service(const char *rootfs_path)
 
 int strip_base_rootfs(const char *path)
 {
-    char dir_path[COMMAND_PATH_MAX_LENGTH];
+    char dir_path[COMMON_MAX_PATH_LENGTH];
 
     LOG_INFO("Stripping base rootfs at %s", path);
 
@@ -52,33 +52,33 @@ int strip_base_rootfs(const char *path)
     if (rm_rf(dir_path) != 0)
     {
         LOG_ERROR("Failed to remove man directory");
-        return -1;
+        return -2;
     }
     snprintf(dir_path, sizeof(dir_path), "%s/usr/share/info", path);
     if (rm_rf(dir_path) != 0)
     {
         LOG_ERROR("Failed to remove info directory");
-        return -1;
+        return -3;
     }
 
     // Remove non-English locales.
-    char command[COMMAND_MAX_LENGTH];
-    char quoted_locale_dir[COMMAND_QUOTED_MAX_LENGTH];
+    char command[COMMON_MAX_COMMAND_LENGTH];
+    char quoted_locale_dir[COMMON_MAX_QUOTED_LENGTH];
     snprintf(dir_path, sizeof(dir_path), "%s/usr/share/locale", path);
-    if (shell_quote_path(dir_path, quoted_locale_dir, sizeof(quoted_locale_dir)) != 0)
+    if (shell_escape_path(dir_path, quoted_locale_dir, sizeof(quoted_locale_dir)) != 0)
     {
         LOG_ERROR("Failed to quote locale directory");
-        return -2;
+        return -4;
     }
     snprintf(
         command, sizeof(command),
         "find %s -mindepth 1 -maxdepth 1 ! -name 'en*' -exec rm -rf {} +",
         quoted_locale_dir
     );
-    if (run_command(command) != 0)
+    if (run_command_indented(command) != 0)
     {
         LOG_ERROR("Failed to remove non-English locales");
-        return -2;
+        return -5;
     }
 
     // Mask rfkill service since there's no RF hardware to manage.
@@ -89,7 +89,7 @@ int strip_base_rootfs(const char *path)
     if (write_file(dir_path, "") != 0)
     {
         LOG_ERROR("Failed to clear /etc/motd");
-        return -3;
+        return -6;
     }
     snprintf(dir_path, sizeof(dir_path), "%s/etc/update-motd.d", path);
     rm_rf(dir_path);  // OK if it doesn't exist.

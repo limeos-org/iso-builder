@@ -18,7 +18,7 @@ int run_preparation_phase(const char *version, const char *components_dir)
     {
         LOG_ERROR("Failed to fetch components");
         cleanup_fetch();
-        return -1;
+        return -2;
     }
 
     // Clean up the fetch module.

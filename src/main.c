@@ -19,12 +19,12 @@ static void print_usage(const char *program_name)
 int main(int argc, char *argv[])
 {
     const char *version = NULL;
-    char build_dir[COMMAND_PATH_MAX_LENGTH];
-    char components_dir[COMMAND_PATH_MAX_LENGTH];
-    char base_rootfs_dir[COMMAND_PATH_MAX_LENGTH];
-    char target_rootfs_dir[COMMAND_PATH_MAX_LENGTH];
-    char target_tarball_path[COMMAND_PATH_MAX_LENGTH];
-    char live_rootfs_dir[COMMAND_PATH_MAX_LENGTH];
+    char build_dir[COMMON_MAX_PATH_LENGTH];
+    char components_dir[COMMON_MAX_PATH_LENGTH];
+    char base_rootfs_dir[COMMON_MAX_PATH_LENGTH];
+    char target_rootfs_dir[COMMON_MAX_PATH_LENGTH];
+    char target_tarball_path[COMMON_MAX_PATH_LENGTH];
+    char live_rootfs_dir[COMMON_MAX_PATH_LENGTH];
     int exit_code = 0;
 
     // Verify the program is running as root.
@@ -37,6 +37,20 @@ int main(int argc, char *argv[])
     // Validate all required dependencies are available.
     if (validate_dependencies() != 0)
     {
+        for (int i = 0; i < REQUIRED_FILES_COUNT; i++)
+        {
+            if (!file_exists(REQUIRED_FILES[i]))
+            {
+                LOG_ERROR("Missing required file: %s", REQUIRED_FILES[i]);
+            }
+        }
+        for (int i = 0; i < REQUIRED_COMMANDS_COUNT; i++)
+        {
+            if (!is_command_available(REQUIRED_COMMANDS[i]))
+            {
+                LOG_ERROR("Missing required command: %s", REQUIRED_COMMANDS[i]);
+            }
+        }
         LOG_ERROR("Missing dependencies, cannot continue");
         return 1;
     }
@@ -70,7 +84,7 @@ int main(int argc, char *argv[])
 
     // Extract and validate the version.
     version = argv[optind];
-    if (validate_version(version) != 0)
+    if (validate_version(version) != 1)
     {
         LOG_ERROR("Invalid version format: %s (expected: X.Y.Z or vX.Y.Z)", version);
         return 1;

@@ -5,96 +5,16 @@
 
 #include "all.h"
 
-/** Size of the read buffer for computing file checksums. */
-#define CHECKSUM_BUFFER_SIZE 8192
-
-/** Length of SHA256 hash (32 bytes). */
-#define SHA256_DIGEST_LEN 32
-
-/** Length of SHA256 hash in hex format (64 chars + null). */
-#define SHA256_HEX_LENGTH 65
-
-semistatic int compute_file_sha256(
-    const char *path, char *out_hash, size_t hash_len
-)
-{
-    // Validate output buffer size.
-    if (hash_len < SHA256_HEX_LENGTH)
-    {
-        return -1;
-    }
-
-    // Open the file for reading.
-    FILE *file = fopen(path, "rb");
-    if (!file)
-    {
-        LOG_ERROR("Failed to open file for checksum: %s", path);
-        return -1;
-    }
-
-    // Initialize the digest context.
-    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-    if (!ctx)
-    {
-        fclose(file);
-        return -1;
-    }
-
-    // Configure the context for SHA256.
-    if (EVP_DigestInit_ex(ctx, EVP_sha256(), NULL) != 1)
-    {
-        EVP_MD_CTX_free(ctx);
-        fclose(file);
-        return -1;
-    }
-
-    // Process the file in chunks.
-    unsigned char buffer[CHECKSUM_BUFFER_SIZE];
-    size_t bytes_read;
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0)
-    {
-        if (EVP_DigestUpdate(ctx, buffer, bytes_read) != 1)
-        {
-            EVP_MD_CTX_free(ctx);
-            fclose(file);
-            return -1;
-        }
-    }
-
-    // Finalize the hash computation.
-    unsigned char hash[SHA256_DIGEST_LEN];
-    unsigned int digest_len = 0;
-    if (EVP_DigestFinal_ex(ctx, hash, &digest_len) != 1)
-    {
-        EVP_MD_CTX_free(ctx);
-        fclose(file);
-        return -1;
-    }
-
-    // Clean up resources.
-    EVP_MD_CTX_free(ctx);
-    fclose(file);
-
-    // Convert the hash to a hex string.
-    for (unsigned int i = 0; i < digest_len; i++)
-    {
-        snprintf(out_hash + (i * 2), 3, "%02x", hash[i]);
-    }
-    out_hash[SHA256_HEX_LENGTH - 1] = '\0';
-
-    return 0;
-}
-
 static int fetch_expected_checksum(
     const char *repo_name,
     const char *version,
     const char *binary_name,
     char *out_hash,
-    size_t hash_len
+    size_t hash_length
 )
 {
     // Validate buffer size.
-    if (hash_len < SHA256_HEX_LENGTH)
+    if (hash_length < COMMON_SHA256_HEX_LENGTH)
     {
         return -1;
     }
@@ -114,7 +34,7 @@ static int fetch_expected_checksum(
     if (!checksums_stream)
     {
         LOG_ERROR("Failed to create memory stream for checksums");
-        return -1;
+        return -2;
     }
 
     // Initialize the curl session.
@@ -123,7 +43,7 @@ static int fetch_expected_checksum(
     {
         fclose(checksums_stream);
         free(checksums_data);
-        return -1;
+        return -3;
     }
 
     // Configure curl options and perform the download.
@@ -143,7 +63,7 @@ static int fetch_expected_checksum(
     if (result != CURLE_OK || http_code != 200)
     {
         free(checksums_data);
-        return -1;
+        return -4;
     }
 
     // Parse the checksums file (format: "hash  filename").
@@ -160,7 +80,7 @@ static int fetch_expected_checksum(
         }
 
         // Skip empty lines.
-        if (strlen(line) < SHA256_HEX_LENGTH)
+        if (strlen(line) < COMMON_SHA256_HEX_LENGTH)
         {
             line = next_line;
             continue;
@@ -173,8 +93,8 @@ static int fetch_expected_checksum(
             filename_start += 2;
             if (strcmp(filename_start, binary_name) == 0)
             {
-                strncpy(out_hash, line, SHA256_HEX_LENGTH - 1);
-                out_hash[SHA256_HEX_LENGTH - 1] = '\0';
+                strncpy(out_hash, line, COMMON_SHA256_HEX_LENGTH - 1);
+                out_hash[COMMON_SHA256_HEX_LENGTH - 1] = '\0';
                 found = 1;
                 break;
             }
@@ -185,7 +105,7 @@ static int fetch_expected_checksum(
 
     // Clean up and return the result.
     free(checksums_data);
-    return found ? 0 : -1;
+    return found ? 0 : -5;
 }
 
 static int verify_checksum(
@@ -196,7 +116,7 @@ static int verify_checksum(
 )
 {
     // Fetch the expected checksum from the release.
-    char expected_hash[SHA256_HEX_LENGTH];
+    char expected_hash[COMMON_SHA256_HEX_LENGTH];
     if (fetch_expected_checksum(repo_name, version, binary_name, expected_hash, sizeof(expected_hash)) != 0)
     {
         LOG_WARNING("No checksum available for %s - skipping verification", binary_name);
@@ -204,7 +124,7 @@ static int verify_checksum(
     }
 
     // Compute the actual checksum of the downloaded file.
-    char actual_hash[SHA256_HEX_LENGTH];
+    char actual_hash[COMMON_SHA256_HEX_LENGTH];
     if (compute_file_sha256(file_path, actual_hash, sizeof(actual_hash)) != 0)
     {
         LOG_ERROR("Failed to compute checksum for %s", file_path);
@@ -217,7 +137,7 @@ static int verify_checksum(
         LOG_ERROR("Checksum mismatch for %s", binary_name);
         LOG_ERROR("  Expected: %s", expected_hash);
         LOG_ERROR("  Actual:   %s", actual_hash);
-        return -1;
+        return -2;
     }
 
     LOG_INFO("Checksum verified for %s", binary_name);
@@ -229,7 +149,7 @@ static int copy_local_component(
 )
 {
     // Construct the local binary path using the binary name.
-    char local_path[COMMAND_PATH_MAX_LENGTH];
+    char local_path[COMMON_MAX_PATH_LENGTH];
     snprintf(local_path, sizeof(local_path), CONFIG_LOCAL_BIN_DIR "/%s", component->binary_name);
 
     // Check if the local binary exists.
@@ -242,13 +162,13 @@ static int copy_local_component(
     mkdir_p(output_directory);
 
     // Construct the output path using the repo name.
-    char output_path[COMMAND_PATH_MAX_LENGTH];
+    char output_path[COMMON_MAX_PATH_LENGTH];
     snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, component->repo_name);
 
     // Copy the local binary to the output directory.
     if (copy_file(local_path, output_path) != 0)
     {
-        return -1;
+        return -2;
     }
 
     LOG_INFO("Using local %s", component->binary_name);
@@ -270,11 +190,11 @@ static int download_remote(
 )
 {
     // Resolve the version to the latest within the major version.
-    char resolved_version[VERSION_MAX_LENGTH];
+    char resolved_version[COMMON_MAX_VERSION_LENGTH];
     int resolve_result = resolve_version(
         component->repo_name, version, resolved_version, sizeof(resolved_version)
     );
-    if (resolve_result == -1)
+    if (resolve_result == -2)
     {
         // API failure - fall back to exact version.
         LOG_WARNING(
@@ -286,7 +206,7 @@ static int download_remote(
     }
     else if (resolve_result < 0)
     {
-        // Other failures (no matching version, parse error).
+        // Other failures (invalid format, parse error, no matching version).
         return -1;
     }
 
@@ -299,7 +219,7 @@ static int download_remote(
     );
 
     // Construct the local output file path.
-    char output_path[COMMAND_PATH_MAX_LENGTH];
+    char output_path[COMMON_MAX_PATH_LENGTH];
     snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, component->repo_name);
 
     // Log the fetch operation.
@@ -313,7 +233,7 @@ static int download_remote(
     if (!output_file)
     {
         LOG_ERROR("Failed to create file %s: %s", output_path, strerror(errno));
-        return -1;
+        return -2;
     }
 
     // Initialize the curl session.
@@ -322,7 +242,7 @@ static int download_remote(
     {
         LOG_ERROR("Failed to initialize curl");
         fclose(output_file);
-        return -1;
+        return -3;
     }
 
     // Configure curl options for the download.
@@ -349,7 +269,7 @@ static int download_remote(
     {
         remove(output_path);
         LOG_ERROR("Download failed: %s", curl_easy_strerror(result));
-        return -1;
+        return -4;
     }
 
     // Check for HTTP errors.
@@ -357,7 +277,7 @@ static int download_remote(
     {
         remove(output_path);
         LOG_ERROR("Download failed: HTTP %ld", http_code);
-        return -1;
+        return -5;
     }
 
     // Validate downloaded file size.
@@ -366,7 +286,7 @@ static int download_remote(
     {
         remove(output_path);
         LOG_ERROR("Download failed: empty or missing file for %s", component->repo_name);
-        return -1;
+        return -6;
     }
 
     LOG_INFO("Downloaded %s (%ld bytes)", component->repo_name, (long)file_stat.st_size);
@@ -375,7 +295,7 @@ static int download_remote(
     if (verify_checksum(output_path, component->repo_name, resolved_version, component->repo_name) != 0)
     {
         remove(output_path);
-        return -1;
+        return -7;
     }
 
     return 0;

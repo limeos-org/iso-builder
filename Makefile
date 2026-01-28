@@ -1,6 +1,9 @@
 CC = clang
 CFLAGS = -Wall -Wextra -g -MMD -MP
-LIBS = -lcurl -ljson-c -lcrypto
+
+INTERNAL_LIBS = -L/usr/local/lib -l:limeos-common-lib.a
+EXTERNAL_LIBS = -lcurl -ljson-c -lcrypto -ldl
+LIBS = $(INTERNAL_LIBS) $(EXTERNAL_LIBS)
 
 # ---
 # Build Configuration

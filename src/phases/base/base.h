@@ -10,6 +10,7 @@
  * @param rootfs_dir The directory for the base rootfs.
  *
  * @return - `0` - Indicates success.
- * @return - `-1` - Indicates failure.
+ * @return - `-1` - Indicates base rootfs creation failure.
+ * @return - `-2` - Indicates base rootfs stripping failure.
  */
 int run_base_phase(const char *rootfs_dir);

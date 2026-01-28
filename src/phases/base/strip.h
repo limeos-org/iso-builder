@@ -10,8 +10,11 @@
  * @param path The path to the base rootfs directory.
  *
  * @return - `0` - Indicates success.
- * @return - `-1` - Indicates documentation removal failure.
- * @return - `-2` - Indicates locale removal failure.
- * @return - `-3` - Indicates MOTD clear failure.
+ * @return - `-1` - Indicates doc directory removal failure.
+ * @return - `-2` - Indicates man directory removal failure.
+ * @return - `-3` - Indicates info directory removal failure.
+ * @return - `-4` - Indicates locale path quoting failure.
+ * @return - `-5` - Indicates locale removal failure.
+ * @return - `-6` - Indicates MOTD clear failure.
  */
 int strip_base_rootfs(const char *path);

@@ -1,4 +1,4 @@
-#include "all.h"
+#include "../../all.h"
 
 /** Maximum length for identity file content. */
 #define IDENTITY_CONTENT_MAX_LENGTH 512
@@ -6,12 +6,10 @@
 int write_os_identity(const char *rootfs_path, const char *version)
 {
     char content[IDENTITY_CONTENT_MAX_LENGTH];
-    char path[COMMAND_PATH_MAX_LENGTH];
-
-    LOG_INFO("Writing OS identity files...");
+    char path[COMMON_MAX_PATH_LENGTH];
 
     // Strip the 'v' prefix if present for cleaner version display.
-    const char *clean_version = skip_version_prefix(version);
+    const char *clean_version = strip_version_prefix(version);
 
     // Write /etc/os-release for programmatic identification.
     snprintf(content, sizeof(content),
@@ -26,7 +24,6 @@ int write_os_identity(const char *rootfs_path, const char *version)
     snprintf(path, sizeof(path), "%s/etc/os-release", rootfs_path);
     if (write_file(path, content) != 0)
     {
-        LOG_ERROR("Failed to write /etc/os-release");
         return -1;
     }
 
@@ -38,7 +35,6 @@ int write_os_identity(const char *rootfs_path, const char *version)
     snprintf(path, sizeof(path), "%s/etc/issue", rootfs_path);
     if (write_file(path, content) != 0)
     {
-        LOG_ERROR("Failed to write /etc/issue");
         return -2;
     }
 
@@ -47,7 +43,6 @@ int write_os_identity(const char *rootfs_path, const char *version)
     snprintf(path, sizeof(path), "%s/etc/issue.net", rootfs_path);
     if (write_file(path, content) != 0)
     {
-        LOG_ERROR("Failed to write /etc/issue.net");
         return -3;
     }
 
@@ -56,11 +51,8 @@ int write_os_identity(const char *rootfs_path, const char *version)
     snprintf(path, sizeof(path), "%s/etc/machine-id", rootfs_path);
     if (write_file(path, "") != 0)
     {
-        LOG_ERROR("Failed to clear /etc/machine-id");
         return -4;
     }
-
-    LOG_INFO("OS identity files written successfully");
 
     return 0;
 }

@@ -1,8 +1,8 @@
 #pragma once
 
-/*
+/**
  * semistatic: expands to 'static' normally, or nothing when -DTESTING is set.
- * This exposes functions for unit testing while keeping them static in 
+ * This exposes functions for unit testing while keeping them static in
  * production. Declare test-accessible functions in tests/all.h.
  */
 #ifdef TESTING
@@ -27,6 +27,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <limeos-common-lib.h>
 #include "config.h"
 
 #include "phases/preparation/resolve.h"
@@ -49,10 +50,7 @@
 #include "phases/assembly/grub.h"
 #include "phases/assembly/iso.h"
 #include "phases/assembly/assembly.h"
-#include "utils/command.h"
-#include "utils/signals.h"
-#include "utils/log.h"
-#include "utils/version.h"
+#include "utils/rootfs.h"
 #include "utils/dependencies.h"
-#include "utils/identity.h"
-#include "utils/plymouth.h"
+#include "utils/branding/identity.h"
+#include "utils/branding/plymouth.h"

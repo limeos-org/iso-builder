@@ -9,7 +9,7 @@ int setup_grub(const char *staging_path)
     LOG_INFO("Configuring GRUB for live ISO boot");
 
     // Construct the GRUB directory path.
-    char grub_dir[COMMAND_PATH_MAX_LENGTH];
+    char grub_dir[COMMON_MAX_PATH_LENGTH];
     snprintf(grub_dir, sizeof(grub_dir), "%s/boot/grub", staging_path);
 
     // Create the GRUB directory.
@@ -20,7 +20,7 @@ int setup_grub(const char *staging_path)
     }
 
     // Construct the grub.cfg path.
-    char grub_cfg_path[COMMAND_PATH_MAX_LENGTH];
+    char grub_cfg_path[COMMON_MAX_PATH_LENGTH];
     snprintf(grub_cfg_path, sizeof(grub_cfg_path), "%s/grub.cfg", grub_dir);
 
     // Define the GRUB configuration content.

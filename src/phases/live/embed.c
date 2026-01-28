@@ -10,7 +10,7 @@ int embed_target_rootfs(const char *live_rootfs_path, const char *tarball_path)
     LOG_INFO("Embedding target rootfs tarball into live rootfs...");
 
     // Create the target directory within the live rootfs.
-    char dst_dir[COMMAND_PATH_MAX_LENGTH];
+    char dst_dir[COMMON_MAX_PATH_LENGTH];
     snprintf(dst_dir, sizeof(dst_dir), "%s/usr/share/limeos", live_rootfs_path);
     if (mkdir_p(dst_dir) != 0)
     {
@@ -19,7 +19,7 @@ int embed_target_rootfs(const char *live_rootfs_path, const char *tarball_path)
     }
 
     // Copy the tarball to the live rootfs.
-    char dst_path[COMMAND_PATH_MAX_LENGTH];
+    char dst_path[COMMON_MAX_PATH_LENGTH];
     snprintf(dst_path, sizeof(dst_path), "%s" CONFIG_TARGET_ROOTFS_PATH, live_rootfs_path);
     if (copy_file(tarball_path, dst_path) != 0)
     {

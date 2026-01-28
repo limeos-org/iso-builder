@@ -1,12 +1,6 @@
 /**
  * This code is responsible for creating a minimal base rootfs that both
  * target and live environments will be derived from.
- *
- * Note: This phase pre-creates conf.d/ drop-ins but NOT /etc/initramfs-tools/
- * modules. Unlike drop-ins, 'modules' is a dpkg conffile owned by initramfs-
- * tools; dpkg replaces it with the package's default on install. GPU drivers
- * are appended to 'modules' after packages install (see live/create.c and
- * target/create.c).
  */
 
 #include "all.h"
@@ -16,24 +10,24 @@ int create_base_rootfs(const char *path)
     LOG_INFO("Creating base rootfs at %s", path);
 
     // Quote the path for shell safety.
-    char quoted_path[COMMAND_QUOTED_MAX_LENGTH];
-    if (shell_quote_path(path, quoted_path, sizeof(quoted_path)) != 0)
+    char quoted_path[COMMON_MAX_QUOTED_LENGTH];
+    if (shell_escape_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
         LOG_ERROR("Failed to quote path");
         return -1;
     }
 
     // Run debootstrap to create a minimal Debian rootfs.
-    char command[COMMAND_MAX_LENGTH];
+    char command[COMMON_MAX_COMMAND_LENGTH];
     snprintf(
         command, sizeof(command),
         "debootstrap --variant=minbase %s %s",
         CONFIG_DEBIAN_RELEASE, quoted_path
     );
-    if (run_command(command) != 0)
+    if (run_command_indented(command) != 0)
     {
         LOG_ERROR("Command failed: debootstrap");
-        return -1;
+        return -2;
     }
 
     // Enable Debian's non-free-firmware section.
@@ -41,7 +35,7 @@ int create_base_rootfs(const char *path)
     // ships essential firmware separately from main starting with Debian 12.
     LOG_INFO("Configuring apt sources...");
     char sources_content[256];
-    char sources_path[COMMAND_PATH_MAX_LENGTH];
+    char sources_path[COMMON_MAX_PATH_LENGTH];
     snprintf(
         sources_content, sizeof(sources_content),
         "deb http://deb.debian.org/debian %s main non-free-firmware\n",
@@ -51,15 +45,15 @@ int create_base_rootfs(const char *path)
     if (write_file(sources_path, sources_content) != 0)
     {
         LOG_ERROR("Failed to configure apt sources");
-        return -2;
+        return -3;
     }
 
     // Update package lists for later package installation.
     LOG_INFO("Updating package lists...");
-    if (run_chroot(path, "apt-get update") != 0)
+    if (run_chroot_indented(path, "apt-get update") != 0)
     {
         LOG_ERROR("Failed to update package lists");
-        return -2;
+        return -4;
     }
 
     // Pre-create initramfs configuration before installing packages. When
@@ -69,7 +63,7 @@ int create_base_rootfs(const char *path)
     // survive package installation; files like /etc/initramfs-tools/modules
     // are dpkg conffiles that get replaced when initramfs-tools installs.
     LOG_INFO("Pre-configuring initramfs for hardware support...");
-    char initramfs_conf_dir[COMMAND_PATH_MAX_LENGTH];
+    char initramfs_conf_dir[COMMON_MAX_PATH_LENGTH];
     snprintf(
         initramfs_conf_dir, sizeof(initramfs_conf_dir),
         "%s/etc/initramfs-tools/conf.d", path
@@ -77,13 +71,13 @@ int create_base_rootfs(const char *path)
     if (mkdir_p(initramfs_conf_dir) != 0)
     {
         LOG_ERROR("Failed to create initramfs-tools directory");
-        return -3;
+        return -5;
     }
 
     // Set MODULES=most to include drivers for hardware not on the build host
     // (VMs, NVMe, USB). The default MODULES=dep only includes drivers for
     // detected hardware, which breaks when the ISO boots elsewhere.
-    char driver_policy_path[COMMAND_PATH_MAX_LENGTH];
+    char driver_policy_path[COMMON_MAX_PATH_LENGTH];
     snprintf(
         driver_policy_path, sizeof(driver_policy_path),
         "%s/etc/initramfs-tools/conf.d/driver-policy.conf", path
@@ -91,7 +85,7 @@ int create_base_rootfs(const char *path)
     if (write_file(driver_policy_path, "MODULES=most\n") != 0)
     {
         LOG_ERROR("Failed to create initramfs conf.d");
-        return -3;
+        return -6;
     }
 
     LOG_INFO("Base rootfs created successfully");

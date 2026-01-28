@@ -10,6 +10,7 @@
  * @param components_dir The directory to store downloaded components.
  *
  * @return - `0` - Indicates success.
- * @return - `-1` - Indicates failure.
+ * @return - `-1` - Indicates fetch module initialization failure.
+ * @return - `-2` - Indicates component fetch failure.
  */
 int run_preparation_phase(const char *version, const char *components_dir);

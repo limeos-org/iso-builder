@@ -1,7 +1,8 @@
 #pragma once
 
 /**
- * Configures the target rootfs with OS identity, splash, GRUB, TTY policy, and XDM.
+ * Configures the target rootfs with OS identity, splash, GRUB, TTY policy,
+ * and XDM.
  *
  * @param path The path to the target rootfs directory.
  * @param version The version string for the OS (e.g., "1.0.0").

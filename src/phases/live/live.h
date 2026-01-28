@@ -14,7 +14,13 @@
  * @param version The version string for OS branding.
  *
  * @return - `0` - Indicates success.
- * @return - `-1` - Indicates failure.
+ * @return - `-1` - Indicates live rootfs creation failure.
+ * @return - `-2` - Indicates live rootfs configuration failure.
+ * @return - `-3` - Indicates target rootfs embedding failure.
+ * @return - `-4` - Indicates component installation failure.
+ * @return - `-5` - Indicates autostart configuration failure.
+ * @return - `-6` - Indicates APT directory cleanup failure.
+ * @return - `-7` - Indicates package bundling failure.
  */
 int run_live_phase(
     const char *base_rootfs_dir,

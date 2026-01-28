@@ -6,18 +6,15 @@
  * so the bootloader can find it.
  */
 
-#include "all.h"
+#include "../../all.h"
 
 int configure_plymouth(const char *rootfs_path, const char *logo_path)
 {
-    char theme_dir[COMMAND_PATH_MAX_LENGTH];
-
-    LOG_INFO("Configuring Plymouth splash screen...");
+    char theme_dir[COMMON_MAX_PATH_LENGTH];
 
     // Verify the logo file exists.
     if (!file_exists(logo_path))
     {
-        LOG_ERROR("Splash logo not found: %s", logo_path);
         return -1;
     }
 
@@ -31,23 +28,21 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
     // Create the Plymouth theme directory.
     if (mkdir_p(theme_dir) != 0)
     {
-        LOG_ERROR("Failed to create Plymouth theme directory: %s", theme_dir);
         return -2;
     }
 
     // Construct the destination path for the splash image.
-    char splash_dest[COMMAND_PATH_MAX_LENGTH];
+    char splash_dest[COMMON_MAX_PATH_LENGTH];
     snprintf(splash_dest, sizeof(splash_dest), "%s/splash.png", theme_dir);
 
     // Copy the logo to the theme directory.
     if (copy_file(logo_path, splash_dest) != 0)
     {
-        LOG_ERROR("Failed to copy splash logo");
         return -3;
     }
 
     // Construct the theme file path.
-    char theme_file_path[COMMAND_PATH_MAX_LENGTH];
+    char theme_file_path[COMMON_MAX_PATH_LENGTH];
     snprintf(
         theme_file_path, sizeof(theme_file_path),
         "%s/" CONFIG_PLYMOUTH_THEME_NAME ".plymouth",
@@ -68,12 +63,11 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
     // Write the Plymouth theme file.
     if (write_file(theme_file_path, theme_cfg) != 0)
     {
-        LOG_ERROR("Failed to write Plymouth theme file: %s", theme_file_path);
         return -4;
     }
 
     // Construct the script file path.
-    char script_path[COMMAND_PATH_MAX_LENGTH];
+    char script_path[COMMON_MAX_PATH_LENGTH];
     snprintf(
         script_path, sizeof(script_path),
         "%s/" CONFIG_PLYMOUTH_THEME_NAME ".script",
@@ -100,25 +94,23 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
     // Write the Plymouth script file.
     if (write_file(script_path, script_cfg) != 0)
     {
-        LOG_ERROR("Failed to write Plymouth script file: %s", script_path);
         return -5;
     }
 
     // Set LimeOS as the default Plymouth theme.
-    char theme_cmd[COMMAND_PATH_MAX_LENGTH];
+    char theme_cmd[COMMON_MAX_PATH_LENGTH];
     snprintf(
         theme_cmd, sizeof(theme_cmd),
         "plymouth-set-default-theme %s",
         CONFIG_PLYMOUTH_THEME_NAME
     );
-    if (run_chroot(rootfs_path, theme_cmd) != 0)
+    if (run_chroot_indented(rootfs_path, theme_cmd) != 0)
     {
         LOG_WARNING("Failed to set Plymouth theme (plymouth may not be installed)");
     }
 
     // Regenerate initramfs to embed the Plymouth theme.
-    LOG_INFO("Regenerating initramfs with new theme...");
-    if (run_chroot(rootfs_path, "update-initramfs -u") != 0)
+    if (run_chroot_indented(rootfs_path, "update-initramfs -u") != 0)
     {
         LOG_WARNING("Failed to regenerate initramfs");
     }
@@ -126,9 +118,9 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
     // Copy the updated versioned initrd to the generic name.
     // The live bootloader loads /boot/initrd.img directly.
     // For target, this overwrites the symlink but content is identical.
-    char initrd_pattern[COMMAND_PATH_MAX_LENGTH];
-    char initrd_src[COMMAND_PATH_MAX_LENGTH];
-    char initrd_dst[COMMAND_PATH_MAX_LENGTH];
+    char initrd_pattern[COMMON_MAX_PATH_LENGTH];
+    char initrd_src[COMMON_MAX_PATH_LENGTH];
+    char initrd_dst[COMMON_MAX_PATH_LENGTH];
     snprintf(
         initrd_pattern, sizeof(initrd_pattern),
         "%s/boot/initrd.img-*",
@@ -143,7 +135,5 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
         }
     }
 
-    LOG_INFO("Plymouth splash configured successfully");
-    
     return 0;
 }

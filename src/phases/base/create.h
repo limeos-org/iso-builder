@@ -10,8 +10,11 @@
  * @param path The path to create the base rootfs.
  *
  * @return - `0` - Indicates success.
- * @return - `-1` - Indicates debootstrap failure.
- * @return - `-2` - Indicates apt sources or update failure.
- * @return - `-3` - Indicates initramfs configuration failure.
+ * @return - `-1` - Indicates path quoting failure.
+ * @return - `-2` - Indicates debootstrap failure.
+ * @return - `-3` - Indicates apt sources configuration failure.
+ * @return - `-4` - Indicates package list update failure.
+ * @return - `-5` - Indicates initramfs directory creation failure.
+ * @return - `-6` - Indicates initramfs config write failure.
  */
 int create_base_rootfs(const char *path);

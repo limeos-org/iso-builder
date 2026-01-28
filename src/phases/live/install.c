@@ -7,9 +7,9 @@
 
 int install_live_components(const char *rootfs_path, const char *components_path)
 {
-    char src_path[COMMAND_PATH_MAX_LENGTH];
-    char dst_path[COMMAND_PATH_MAX_LENGTH];
-    char bin_dir[COMMAND_PATH_MAX_LENGTH];
+    char src_path[COMMON_MAX_PATH_LENGTH];
+    char dst_path[COMMON_MAX_PATH_LENGTH];
+    char bin_dir[COMMON_MAX_PATH_LENGTH];
 
     LOG_INFO("Installing components into live rootfs...");
 
@@ -32,14 +32,14 @@ int install_live_components(const char *rootfs_path, const char *components_path
         if (copy_file(src_path, dst_path) != 0)
         {
             LOG_ERROR("Failed to install required component: %s", component->repo_name);
-            return -1;
+            return -2;
         }
 
         // Make the binary executable.
         if (chmod_file("+x", dst_path) != 0)
         {
             LOG_ERROR("Failed to make component executable: %s", component->binary_name);
-            return -1;
+            return -3;
         }
 
         LOG_INFO("Installed %s", component->binary_name);

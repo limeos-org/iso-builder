@@ -17,7 +17,7 @@ int run_base_phase(const char *rootfs_dir)
     if (strip_base_rootfs(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to strip base rootfs");
-        return -1;
+        return -2;
     }
 
     LOG_INFO("Phase 2 complete: Base rootfs ready");

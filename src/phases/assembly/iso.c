@@ -16,7 +16,7 @@
 static int create_staging_directory(const char *staging_path)
 {
     // Construct the live directory path inside staging.
-    char live_path[COMMAND_PATH_MAX_LENGTH];
+    char live_path[COMMON_MAX_PATH_LENGTH];
     snprintf(live_path, sizeof(live_path), "%s/live", staging_path);
 
     // Create the live directory structure.
@@ -34,36 +34,36 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
     LOG_INFO("Creating squashfs filesystem...");
 
     // Construct the squashfs output path.
-    char squashfs_path[COMMAND_PATH_MAX_LENGTH];
+    char squashfs_path[COMMON_MAX_PATH_LENGTH];
     snprintf(squashfs_path, sizeof(squashfs_path), "%s/live/filesystem.squashfs", staging_path);
 
     // Quote the rootfs path for shell safety.
-    char quoted_rootfs[COMMAND_QUOTED_MAX_LENGTH];
-    if (shell_quote_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
+    char quoted_rootfs[COMMON_MAX_QUOTED_LENGTH];
+    if (shell_escape_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
     {
         LOG_ERROR("Failed to quote rootfs path");
         return -1;
     }
 
     // Quote the squashfs path for shell safety.
-    char quoted_squashfs[COMMAND_QUOTED_MAX_LENGTH];
-    if (shell_quote_path(squashfs_path, quoted_squashfs, sizeof(quoted_squashfs)) != 0)
+    char quoted_squashfs[COMMON_MAX_QUOTED_LENGTH];
+    if (shell_escape_path(squashfs_path, quoted_squashfs, sizeof(quoted_squashfs)) != 0)
     {
         LOG_ERROR("Failed to quote squashfs path");
-        return -1;
+        return -2;
     }
 
     // Create the squashfs filesystem.
-    char command[COMMAND_MAX_LENGTH];
+    char command[COMMON_MAX_COMMAND_LENGTH];
     snprintf(
         command, sizeof(command),
         "mksquashfs %s %s -comp " SQUASHFS_COMPRESSION " -noappend",
         quoted_rootfs, quoted_squashfs
     );
-    if (run_command(command) != 0)
+    if (run_command_indented(command) != 0)
     {
         LOG_ERROR("Failed to create squashfs from %s", rootfs_path);
-        return -1;
+        return -3;
     }
 
     return 0;
@@ -71,8 +71,8 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
 
 static int copy_boot_files(const char *rootfs_path, const char *staging_path)
 {
-    char src_path[COMMAND_PATH_MAX_LENGTH];
-    char dst_path[COMMAND_PATH_MAX_LENGTH];
+    char src_path[COMMON_MAX_PATH_LENGTH];
+    char dst_path[COMMON_MAX_PATH_LENGTH];
 
     // Create the boot directory in staging.
     snprintf(dst_path, sizeof(dst_path), "%s/boot", staging_path);
@@ -88,7 +88,7 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     if (copy_file(src_path, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy kernel");
-        return -1;
+        return -2;
     }
 
     // Copy the initrd to staging.
@@ -97,7 +97,7 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     if (copy_file(src_path, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy initrd");
-        return -1;
+        return -3;
     }
 
     return 0;
@@ -108,22 +108,22 @@ static int run_grub_mkrescue(const char *staging_path, const char *output_path)
     LOG_INFO("Running grub-mkrescue to create hybrid ISO...");
 
     // Quote paths for shell safety.
-    char quoted_staging[COMMAND_QUOTED_MAX_LENGTH];
-    if (shell_quote_path(staging_path, quoted_staging, sizeof(quoted_staging)) != 0)
+    char quoted_staging[COMMON_MAX_QUOTED_LENGTH];
+    if (shell_escape_path(staging_path, quoted_staging, sizeof(quoted_staging)) != 0)
     {
         LOG_ERROR("Failed to quote staging path");
         return -1;
     }
-    char quoted_output[COMMAND_QUOTED_MAX_LENGTH];
-    if (shell_quote_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
+    char quoted_output[COMMON_MAX_QUOTED_LENGTH];
+    if (shell_escape_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
     {
         LOG_ERROR("Failed to quote output path");
-        return -1;
+        return -2;
     }
 
     // Build hybrid ISO supporting both BIOS and UEFI boot.
     // grub-mkrescue handles all boot image creation automatically.
-    char command[COMMAND_MAX_LENGTH];
+    char command[COMMON_MAX_COMMAND_LENGTH];
     snprintf(
         command, sizeof(command),
         "grub-mkrescue "
@@ -134,10 +134,10 @@ static int run_grub_mkrescue(const char *staging_path, const char *output_path)
         "%s",               // Source directory (staging).
         quoted_output, quoted_staging
     );
-    if (run_command(command) != 0)
+    if (run_command_indented(command) != 0)
     {
         LOG_ERROR("Failed to create ISO image: %s", output_path);
-        return -1;
+        return -3;
     }
 
     return 0;
@@ -171,7 +171,7 @@ static void cleanup_staging(const char *staging_path)
 
 static void cleanup_live_boot(const char *rootfs_path)
 {
-    char path[COMMAND_PATH_MAX_LENGTH];
+    char path[COMMON_MAX_PATH_LENGTH];
 
     LOG_INFO("Removing boot files from live rootfs...");
 
@@ -192,7 +192,7 @@ int create_iso(const char *rootfs_path, const char *output_path)
     LOG_INFO("Creating bootable ISO image...");
 
     // Construct the staging directory path adjacent to rootfs.
-    char staging_path[COMMAND_PATH_MAX_LENGTH];
+    char staging_path[COMMON_MAX_PATH_LENGTH];
     snprintf(staging_path, sizeof(staging_path), "%s/../staging-iso", rootfs_path);
 
     // Create the staging directory structure.

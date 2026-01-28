@@ -8,17 +8,19 @@
 
 /**
  * Downloads packages using apt-get download.
- * Packages are downloaded to the current directory, so we cd to the APT cache first.
+ *
+ * Packages are downloaded to the current directory, so we cd to the
+ * APT cache first.
  */
 static int download_packages(const char *rootfs, const char *packages)
 {
-    char command[COMMAND_MAX_LENGTH];
+    char command[COMMON_MAX_COMMAND_LENGTH];
     snprintf(
         command, sizeof(command),
         "cd " CONFIG_APT_CACHE_DIR " && apt-get download %s",
         packages
     );
-    return run_chroot(rootfs, command);
+    return run_chroot_indented(rootfs, command);
 }
 
 int bundle_live_packages(const char *live_rootfs_path)
@@ -26,7 +28,7 @@ int bundle_live_packages(const char *live_rootfs_path)
     LOG_INFO("Bundling bootloader packages into live APT cache...");
 
     // Construct the APT cache directory path in the live rootfs.
-    char apt_cache_dir[COMMAND_PATH_MAX_LENGTH];
+    char apt_cache_dir[COMMON_MAX_PATH_LENGTH];
     snprintf(apt_cache_dir, sizeof(apt_cache_dir),
         "%s" CONFIG_APT_CACHE_DIR, live_rootfs_path);
 
@@ -39,7 +41,7 @@ int bundle_live_packages(const char *live_rootfs_path)
 
     // Update package lists (needed after cleanup_apt_directories removes them).
     LOG_INFO("Updating package lists...");
-    if (run_chroot(live_rootfs_path, "apt-get update") != 0)
+    if (run_chroot_indented(live_rootfs_path, "apt-get update") != 0)
     {
         LOG_ERROR("Failed to update package lists");
         return -2;

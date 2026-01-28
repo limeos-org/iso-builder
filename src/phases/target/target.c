@@ -20,21 +20,21 @@ int run_target_phase(
     if (configure_target_rootfs(rootfs_dir, version) != 0)
     {
         LOG_ERROR("Failed to configure target rootfs");
-        return -1;
+        return -2;
     }
 
     // Clean up apt directories.
     if (cleanup_apt_directories(rootfs_dir) != 0)
     {
         LOG_ERROR("Failed to cleanup apt directories");
-        return -1;
+        return -3;
     }
 
     // Package target rootfs as tarball.
     if (package_target_rootfs(rootfs_dir, tarball_path) != 0)
     {
         LOG_ERROR("Failed to package target rootfs");
-        return -1;
+        return -4;
     }
 
     // Remove the target rootfs directory.

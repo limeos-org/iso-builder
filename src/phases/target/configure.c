@@ -19,7 +19,7 @@ static int configure_grub(const char *rootfs_path)
 
     // Use drop-in directory to override GRUB settings without replacing
     // the package-managed /etc/default/grub file.
-    char dir_path[COMMAND_PATH_MAX_LENGTH];
+    char dir_path[COMMON_MAX_PATH_LENGTH];
     snprintf(dir_path, sizeof(dir_path), "%s/etc/default/grub.d", rootfs_path);
     if (mkdir_p(dir_path) != 0)
     {
@@ -28,7 +28,7 @@ static int configure_grub(const char *rootfs_path)
     }
 
     // Write the GRUB config file.
-    char file_path[COMMAND_PATH_MAX_LENGTH];
+    char file_path[COMMON_MAX_PATH_LENGTH];
     const char *content =
         "GRUB_DISTRIBUTOR=\"" CONFIG_OS_NAME "\"\n"
         "GRUB_TIMEOUT=0\n"
@@ -58,7 +58,7 @@ static int configure_grub(const char *rootfs_path)
  */
 static int configure_tty_policy(const char *rootfs_path)
 {
-    char path[COMMAND_PATH_MAX_LENGTH];
+    char path[COMMON_MAX_PATH_LENGTH];
 
     LOG_INFO("Enforcing TTY policy...");
 
@@ -109,7 +109,7 @@ static int configure_tty_policy(const char *rootfs_path)
  */
 static int configure_xdm(const char *rootfs_path)
 {
-    char path[COMMAND_PATH_MAX_LENGTH];
+    char path[COMMON_MAX_PATH_LENGTH];
 
     LOG_INFO("Configuring XDM appearance...");
 
@@ -154,14 +154,51 @@ int configure_target_rootfs(const char *path, const char *version)
     LOG_INFO("Configuring target rootfs...");
 
     // Write OS identity files.
-    if (write_os_identity(path, version) != 0)
+    LOG_INFO("Writing OS identity files...");
+    int identity_result = write_os_identity(path, version);
+    if (identity_result != 0)
     {
+        switch (identity_result)
+        {
+            case -1:
+                LOG_ERROR("Failed to write /etc/os-release");
+                break;
+            case -2:
+                LOG_ERROR("Failed to write /etc/issue");
+                break;
+            case -3:
+                LOG_ERROR("Failed to write /etc/issue.net");
+                break;
+            case -4:
+                LOG_ERROR("Failed to clear /etc/machine-id");
+                break;
+        }
         return -1;
     }
 
     // Configure Plymouth splash.
-    if (configure_plymouth(path, CONFIG_SPLASH_LOGO_PATH) != 0)
+    LOG_INFO("Configuring Plymouth splash screen...");
+    int plymouth_result = configure_plymouth(path, CONFIG_SPLASH_LOGO_PATH);
+    if (plymouth_result != 0)
     {
+        switch (plymouth_result)
+        {
+            case -1:
+                LOG_ERROR("Splash logo not found: %s", CONFIG_SPLASH_LOGO_PATH);
+                break;
+            case -2:
+                LOG_ERROR("Failed to create Plymouth theme directory");
+                break;
+            case -3:
+                LOG_ERROR("Failed to copy splash logo");
+                break;
+            case -4:
+                LOG_ERROR("Failed to write Plymouth theme config");
+                break;
+            case -5:
+                LOG_ERROR("Failed to write Plymouth theme script");
+                break;
+        }
         return -2;
     }
 

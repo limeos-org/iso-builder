@@ -11,8 +11,11 @@
  * @param path The directory where the rootfs will be created.
  *
  * @return - `0` - Indicates successful creation.
- * @return - `-1` - Indicates copy failure.
- * @return - `-2` - Indicates package installation failure.
- * @return - `-3` - Indicates GPU driver or APT cleanup failure.
+ * @return - `-1` - Indicates base path quoting failure.
+ * @return - `-2` - Indicates destination path quoting failure.
+ * @return - `-3` - Indicates base rootfs copy failure.
+ * @return - `-4` - Indicates package installation failure.
+ * @return - `-5` - Indicates GPU driver initramfs failure.
+ * @return - `-6` - Indicates APT cache cleanup failure.
  */
 int create_target_rootfs(const char *base_path, const char *path);

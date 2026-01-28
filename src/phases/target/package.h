@@ -10,6 +10,8 @@
  * @param output_path The path where the tarball will be created.
  *
  * @return - `0` - Indicates successful packaging.
- * @return - `-1` - Indicates tarball creation failure.
+ * @return - `-1` - Indicates rootfs path quoting failure.
+ * @return - `-2` - Indicates output path quoting failure.
+ * @return - `-3` - Indicates tarball creation failure.
  */
 int package_target_rootfs(const char *rootfs_path, const char *output_path);

@@ -11,6 +11,8 @@
  * binaries.
  *
  * @return - `0` - Indicates successful installation.
- * @return - `-1` - Indicates installation failure.
+ * @return - `-1` - Indicates bin directory creation failure.
+ * @return - `-2` - Indicates component copy failure.
+ * @return - `-3` - Indicates chmod failure.
  */
 int install_live_components(const char *rootfs_path, const char *components_path);
