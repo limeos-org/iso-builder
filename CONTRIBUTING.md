@@ -60,38 +60,32 @@ section listed first will take precedence.
 
 This subsection explains how to build the ISO builder from source.
 
-First, install the required dependencies. For Debian-based Linux distributions,
-run:
+First, install the required **external** dependencies. For Debian-based Linux
+distributions, run:
 
 ```bash
 sudo apt install \
-   clang \
-   make \
-   libcurl4-openssl-dev \
-   libjson-c-dev \
-   libcmocka-dev \
-   libssl-dev
+    clang \
+    make \
+    libcurl4-openssl-dev \
+    libjson-c-dev \
+    libcmocka-dev \
+    libssl-dev
 ```
-
-To verify all build dependencies are installed, run:
-
-```bash
-dpkg -s \
-   clang \
-   make \
-   libcurl4-openssl-dev \
-   libjson-c-dev \
-   libcmocka-dev \
-   libssl-dev >/dev/null 2>&1 && echo "OK"
-```
-
-The output should be "OK" if all is installed, nothing if any are missing.
 
 If you're not using a Debian-based distribution, package names may differ.
 In that case, consult your distribution's package repositories
 (package listings) to find the correct package names for your system.
 
-Then, from the root directory of the repository, build the project by running:
+Then, install the required **internal** LimeOS dependencies by cloning,
+building, and installing each of the following repositories:
+
+- `limeos-common-lib`
+
+For each repository, follow the building and installation instructions within
+its `CONTRIBUTING.md` file.
+
+Then, from the root directory of this repository, build the project by running:
 
 ```bash
 make
