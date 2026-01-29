@@ -21,7 +21,7 @@ static int configure_grub(const char *rootfs_path)
     // the package-managed /etc/default/grub file.
     char dir_path[COMMON_MAX_PATH_LENGTH];
     snprintf(dir_path, sizeof(dir_path), "%s/etc/default/grub.d", rootfs_path);
-    if (mkdir_p(dir_path) != 0)
+    if (common.mkdir_p(dir_path) != 0)
     {
         LOG_ERROR("Failed to create /etc/default/grub.d");
         return -1;
@@ -38,7 +38,7 @@ static int configure_grub(const char *rootfs_path)
         "GRUB_GFXPAYLOAD_LINUX=keep\n"
         "GRUB_CMDLINE_LINUX_DEFAULT=\"" CONFIG_TARGET_KERNEL_PARAMS "\"\n";
     snprintf(file_path, sizeof(file_path), "%s/distributor.cfg", dir_path);
-    if (write_file(file_path, content) != 0)
+    if (common.write_file(file_path, content) != 0)
     {
         LOG_ERROR("Failed to write GRUB config");
         return -2;
@@ -64,7 +64,7 @@ static int configure_tty_policy(const char *rootfs_path)
 
     // Create the systemd system directory if it doesn't exist.
     snprintf(path, sizeof(path), "%s/etc/systemd/system", rootfs_path);
-    if (mkdir_p(path) != 0)
+    if (common.mkdir_p(path) != 0)
     {
         LOG_ERROR("Failed to create /etc/systemd/system");
         return -1;
@@ -73,7 +73,7 @@ static int configure_tty_policy(const char *rootfs_path)
     // Mask getty@tty1.service to prevent any login prompt on tty1.
     // This is the primary enforcement of the "tty1 is graphical-only" rule.
     snprintf(path, sizeof(path), "%s/etc/systemd/system/getty@tty1.service", rootfs_path);
-    if (symlink_file("/dev/null", path) != 0)
+    if (common.symlink_file("/dev/null", path) != 0)
     {
         LOG_ERROR("Failed to mask getty@tty1.service");
         return -2;
@@ -82,7 +82,7 @@ static int configure_tty_policy(const char *rootfs_path)
     // Clear /etc/issue as a safety measure.
     // If getty somehow runs on tty1, it won't display any text.
     snprintf(path, sizeof(path), "%s/etc/issue", rootfs_path);
-    if (write_file(path, "") != 0)
+    if (common.write_file(path, "") != 0)
     {
         LOG_ERROR("Failed to clear /etc/issue");
         return -3;
@@ -90,7 +90,7 @@ static int configure_tty_policy(const char *rootfs_path)
 
     // Clear /etc/issue.net as well.
     snprintf(path, sizeof(path), "%s/etc/issue.net", rootfs_path);
-    if (write_file(path, "") != 0)
+    if (common.write_file(path, "") != 0)
     {
         LOG_ERROR("Failed to clear /etc/issue.net");
         return -4;
@@ -115,7 +115,7 @@ static int configure_xdm(const char *rootfs_path)
 
     // Create the XDM directory if it doesn't exist.
     snprintf(path, sizeof(path), "%s/etc/X11/xdm", rootfs_path);
-    if (mkdir_p(path) != 0)
+    if (common.mkdir_p(path) != 0)
     {
         LOG_ERROR("Failed to create /etc/X11/xdm directory");
         return -1;
@@ -129,7 +129,7 @@ static int configure_xdm(const char *rootfs_path)
         "! Remove logo, set greeting\n"
         "xlogin*logoFileName:\n"
         "xlogin*greeting: " CONFIG_OS_NAME " (Temporary DM / Greeter)\n";
-    if (write_file(path, xresources) != 0)
+    if (common.write_file(path, xresources) != 0)
     {
         LOG_ERROR("Failed to configure XDM Xresources");
         return -2;
@@ -138,7 +138,7 @@ static int configure_xdm(const char *rootfs_path)
     // Configure XDM to run X on vt1 instead of the default vt7.
     // This provides graphical continuity from Plymouth splash to desktop.
     snprintf(path, sizeof(path), "%s/etc/X11/xdm/Xservers", rootfs_path);
-    if (write_file(path, ":0 local /usr/bin/X :0 vt1\n") != 0)
+    if (common.write_file(path, ":0 local /usr/bin/X :0 vt1\n") != 0)
     {
         LOG_ERROR("Failed to configure XDM Xservers");
         return -3;

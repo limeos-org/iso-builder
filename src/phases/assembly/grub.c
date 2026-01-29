@@ -13,7 +13,7 @@ int setup_grub(const char *staging_path)
     snprintf(grub_dir, sizeof(grub_dir), "%s/boot/grub", staging_path);
 
     // Create the GRUB directory.
-    if (mkdir_p(grub_dir) != 0)
+    if (common.mkdir_p(grub_dir) != 0)
     {
         LOG_ERROR("Failed to create GRUB directory: %s", grub_dir);
         return -1;
@@ -44,7 +44,7 @@ int setup_grub(const char *staging_path)
         "}\n";
 
     // Write the GRUB configuration file.
-    if (write_file(grub_cfg_path, grub_cfg) != 0)
+    if (common.write_file(grub_cfg_path, grub_cfg) != 0)
     {
         LOG_ERROR("Failed to write GRUB config");
         return -2;

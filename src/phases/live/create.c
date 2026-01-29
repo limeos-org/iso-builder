@@ -11,7 +11,7 @@ int create_live_rootfs(const char *base_path, const char *path)
 
     // Quote the base path for shell safety.
     char quoted_base[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(base_path, quoted_base, sizeof(quoted_base)) != 0)
+    if (common.shell_escape_path(base_path, quoted_base, sizeof(quoted_base)) != 0)
     {
         LOG_ERROR("Failed to quote base path");
         return -1;
@@ -19,7 +19,7 @@ int create_live_rootfs(const char *base_path, const char *path)
 
     // Quote the destination path for shell safety.
     char quoted_path[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(path, quoted_path, sizeof(quoted_path)) != 0)
+    if (common.shell_escape_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
         LOG_ERROR("Failed to quote path");
         return -2;
@@ -29,7 +29,7 @@ int create_live_rootfs(const char *base_path, const char *path)
     LOG_INFO("Copying base rootfs...");
     char command[COMMON_MAX_COMMAND_LENGTH];
     snprintf(command, sizeof(command), "cp -a %s %s", quoted_base, quoted_path);
-    if (run_command_indented(command) != 0)
+    if (common.run_command_indented(command) != 0)
     {
         LOG_ERROR("Failed to copy base rootfs");
         return -3;
@@ -37,7 +37,7 @@ int create_live_rootfs(const char *base_path, const char *path)
 
     // Install live-specific packages.
     LOG_INFO("Installing live environment packages...");
-    int install_result = run_chroot_indented(path,
+    int install_result = common.run_chroot_indented(path,
         "apt-get install -y --no-install-recommends " CONFIG_LIVE_PACKAGES);
 
     // Check if package installation succeeded.
@@ -50,7 +50,7 @@ int create_live_rootfs(const char *base_path, const char *path)
     // Add GPU drivers for early KMS initialization. Must be done AFTER package
     // install because `dpkg` overwrites pre-seeded files. `brand_live_rootfs()`
     // will call update-initramfs later.
-    if (run_chroot(path,
+    if (common.run_chroot(path,
         "printf 'amdgpu\\ni915\\nnouveau\\nradeon\\n' >> /etc/initramfs-tools/modules") != 0)
     {
         LOG_ERROR("Failed to add GPU drivers to initramfs modules");
@@ -59,7 +59,7 @@ int create_live_rootfs(const char *base_path, const char *path)
 
     // Clean APT cache to remove downloaded .deb files.
     // Bootloader packages will be downloaded later by bundle_live_packages.
-    if (run_chroot_indented(path, "apt-get clean") != 0)
+    if (common.run_chroot_indented(path, "apt-get clean") != 0)
     {
         LOG_ERROR("Failed to clean APT cache");
         return -6;

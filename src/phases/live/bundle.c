@@ -20,7 +20,7 @@ static int download_packages(const char *rootfs, const char *packages)
         "cd " CONFIG_APT_CACHE_DIR " && apt-get download %s",
         packages
     );
-    return run_chroot_indented(rootfs, command);
+    return common.run_chroot_indented(rootfs, command);
 }
 
 int bundle_live_packages(const char *live_rootfs_path)
@@ -33,7 +33,7 @@ int bundle_live_packages(const char *live_rootfs_path)
         "%s" CONFIG_APT_CACHE_DIR, live_rootfs_path);
 
     // Ensure the APT cache directory exists.
-    if (mkdir_p(apt_cache_dir) != 0)
+    if (common.mkdir_p(apt_cache_dir) != 0)
     {
         LOG_ERROR("Failed to create APT cache directory");
         return -1;
@@ -41,7 +41,7 @@ int bundle_live_packages(const char *live_rootfs_path)
 
     // Update package lists (needed after cleanup_apt_directories removes them).
     LOG_INFO("Updating package lists...");
-    if (run_chroot_indented(live_rootfs_path, "apt-get update") != 0)
+    if (common.run_chroot_indented(live_rootfs_path, "apt-get update") != 0)
     {
         LOG_ERROR("Failed to update package lists");
         return -2;
@@ -66,11 +66,11 @@ int bundle_live_packages(const char *live_rootfs_path)
     // Clean up apt lists and cache files to reduce image size.
     // Keep only the downloaded .deb files in /var/cache/apt/archives/.
     // These cleanup operations are non-critical; failures are only logged.
-    if (run_chroot(live_rootfs_path, "rm -rf /var/lib/apt/lists/*") != 0)
+    if (common.run_chroot(live_rootfs_path, "rm -rf /var/lib/apt/lists/*") != 0)
     {
         LOG_WARNING("Failed to remove APT lists (non-critical)");
     }
-    if (run_chroot(live_rootfs_path, "rm -f /var/cache/apt/*.bin") != 0)
+    if (common.run_chroot(live_rootfs_path, "rm -f /var/cache/apt/*.bin") != 0)
     {
         LOG_WARNING("Failed to remove APT cache binaries (non-critical)");
     }

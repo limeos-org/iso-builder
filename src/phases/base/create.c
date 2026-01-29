@@ -11,7 +11,7 @@ int create_base_rootfs(const char *path)
 
     // Quote the path for shell safety.
     char quoted_path[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(path, quoted_path, sizeof(quoted_path)) != 0)
+    if (common.shell_escape_path(path, quoted_path, sizeof(quoted_path)) != 0)
     {
         LOG_ERROR("Failed to quote path");
         return -1;
@@ -24,7 +24,7 @@ int create_base_rootfs(const char *path)
         "debootstrap --variant=minbase %s %s",
         CONFIG_DEBIAN_RELEASE, quoted_path
     );
-    if (run_command_indented(command) != 0)
+    if (common.run_command_indented(command) != 0)
     {
         LOG_ERROR("Command failed: debootstrap");
         return -2;
@@ -42,7 +42,7 @@ int create_base_rootfs(const char *path)
         CONFIG_DEBIAN_RELEASE
     );
     snprintf(sources_path, sizeof(sources_path), "%s/etc/apt/sources.list", path);
-    if (write_file(sources_path, sources_content) != 0)
+    if (common.write_file(sources_path, sources_content) != 0)
     {
         LOG_ERROR("Failed to configure apt sources");
         return -3;
@@ -50,7 +50,7 @@ int create_base_rootfs(const char *path)
 
     // Update package lists for later package installation.
     LOG_INFO("Updating package lists...");
-    if (run_chroot_indented(path, "apt-get update") != 0)
+    if (common.run_chroot_indented(path, "apt-get update") != 0)
     {
         LOG_ERROR("Failed to update package lists");
         return -4;
@@ -68,7 +68,7 @@ int create_base_rootfs(const char *path)
         initramfs_conf_dir, sizeof(initramfs_conf_dir),
         "%s/etc/initramfs-tools/conf.d", path
     );
-    if (mkdir_p(initramfs_conf_dir) != 0)
+    if (common.mkdir_p(initramfs_conf_dir) != 0)
     {
         LOG_ERROR("Failed to create initramfs-tools directory");
         return -5;
@@ -82,7 +82,7 @@ int create_base_rootfs(const char *path)
         driver_policy_path, sizeof(driver_policy_path),
         "%s/etc/initramfs-tools/conf.d/driver-policy.conf", path
     );
-    if (write_file(driver_policy_path, "MODULES=most\n") != 0)
+    if (common.write_file(driver_policy_path, "MODULES=most\n") != 0)
     {
         LOG_ERROR("Failed to create initramfs conf.d");
         return -6;

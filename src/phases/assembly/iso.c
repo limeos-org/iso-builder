@@ -20,7 +20,7 @@ static int create_staging_directory(const char *staging_path)
     snprintf(live_path, sizeof(live_path), "%s/live", staging_path);
 
     // Create the live directory structure.
-    if (mkdir_p(live_path) != 0)
+    if (common.mkdir_p(live_path) != 0)
     {
         LOG_ERROR("Failed to create staging directory");
         return -1;
@@ -39,7 +39,7 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
 
     // Quote the rootfs path for shell safety.
     char quoted_rootfs[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
+    if (common.shell_escape_path(rootfs_path, quoted_rootfs, sizeof(quoted_rootfs)) != 0)
     {
         LOG_ERROR("Failed to quote rootfs path");
         return -1;
@@ -47,7 +47,7 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
 
     // Quote the squashfs path for shell safety.
     char quoted_squashfs[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(squashfs_path, quoted_squashfs, sizeof(quoted_squashfs)) != 0)
+    if (common.shell_escape_path(squashfs_path, quoted_squashfs, sizeof(quoted_squashfs)) != 0)
     {
         LOG_ERROR("Failed to quote squashfs path");
         return -2;
@@ -60,7 +60,7 @@ static int create_squashfs(const char *rootfs_path, const char *staging_path)
         "mksquashfs %s %s -comp " SQUASHFS_COMPRESSION " -noappend",
         quoted_rootfs, quoted_squashfs
     );
-    if (run_command_indented(command) != 0)
+    if (common.run_command_indented(command) != 0)
     {
         LOG_ERROR("Failed to create squashfs from %s", rootfs_path);
         return -3;
@@ -76,7 +76,7 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
 
     // Create the boot directory in staging.
     snprintf(dst_path, sizeof(dst_path), "%s/boot", staging_path);
-    if (mkdir_p(dst_path) != 0)
+    if (common.mkdir_p(dst_path) != 0)
     {
         LOG_ERROR("Failed to create boot directory");
         return -1;
@@ -85,7 +85,7 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     // Copy the kernel to staging.
     snprintf(src_path, sizeof(src_path), "%s/boot/vmlinuz", rootfs_path);
     snprintf(dst_path, sizeof(dst_path), "%s/boot/vmlinuz", staging_path);
-    if (copy_file(src_path, dst_path) != 0)
+    if (common.copy_file(src_path, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy kernel");
         return -2;
@@ -94,7 +94,7 @@ static int copy_boot_files(const char *rootfs_path, const char *staging_path)
     // Copy the initrd to staging.
     snprintf(src_path, sizeof(src_path), "%s/boot/initrd.img", rootfs_path);
     snprintf(dst_path, sizeof(dst_path), "%s/boot/initrd.img", staging_path);
-    if (copy_file(src_path, dst_path) != 0)
+    if (common.copy_file(src_path, dst_path) != 0)
     {
         LOG_ERROR("Failed to copy initrd");
         return -3;
@@ -109,13 +109,13 @@ static int run_grub_mkrescue(const char *staging_path, const char *output_path)
 
     // Quote paths for shell safety.
     char quoted_staging[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(staging_path, quoted_staging, sizeof(quoted_staging)) != 0)
+    if (common.shell_escape_path(staging_path, quoted_staging, sizeof(quoted_staging)) != 0)
     {
         LOG_ERROR("Failed to quote staging path");
         return -1;
     }
     char quoted_output[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
+    if (common.shell_escape_path(output_path, quoted_output, sizeof(quoted_output)) != 0)
     {
         LOG_ERROR("Failed to quote output path");
         return -2;
@@ -134,7 +134,7 @@ static int run_grub_mkrescue(const char *staging_path, const char *output_path)
         "%s",               // Source directory (staging).
         quoted_output, quoted_staging
     );
-    if (run_command_indented(command) != 0)
+    if (common.run_command_indented(command) != 0)
     {
         LOG_ERROR("Failed to create ISO image: %s", output_path);
         return -3;
@@ -149,7 +149,7 @@ static void cleanup_staging(const char *staging_path)
     for (int attempt = 1; attempt <= CLEANUP_MAX_RETRIES; attempt++)
     {
         // Try to remove the staging directory.
-        if (rm_rf(staging_path) == 0)
+        if (common.rm_rf(staging_path) == 0)
         {
             return;
         }
@@ -180,11 +180,11 @@ static void cleanup_live_boot(const char *rootfs_path)
 
     // Remove the generic kernel symlink.
     snprintf(path, sizeof(path), "%s/boot/vmlinuz", rootfs_path);
-    rm_file(path);
+    common.rm_file(path);
 
     // Remove the generic initrd symlink.
     snprintf(path, sizeof(path), "%s/boot/initrd.img", rootfs_path);
-    rm_file(path);
+    common.rm_file(path);
 }
 
 int create_iso(const char *rootfs_path, const char *output_path)

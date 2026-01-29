@@ -139,7 +139,7 @@ int resolve_version(
 )
 {
     // Extract the target major version from the user-provided version.
-    int target_major = get_version_major(version);
+    int target_major = common.get_version_major(version);
     if (target_major < 0)
     {
         LOG_ERROR("Invalid version format: %s", version);
@@ -192,7 +192,7 @@ int resolve_version(
         }
 
         // Check if this release matches the target major version.
-        int release_major = get_version_major(tag_name);
+        int release_major = common.get_version_major(tag_name);
         if (release_major != target_major)
         {
             continue;
@@ -217,7 +217,7 @@ int resolve_version(
         }
 
         // Update the best version if this one is newer.
-        if (!best_version || compare_versions(tag_name, best_version) > 0)
+        if (!best_version || common.compare_versions(tag_name, best_version) > 0)
         {
             best_version = tag_name;
         }

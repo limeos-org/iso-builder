@@ -18,12 +18,12 @@ static int setup(void **state)
         "/tmp/iso-builder-test-identity-%d",
         getpid()
     );
-    mkdir_p(test_rootfs);
+    common.mkdir_p(test_rootfs);
 
     // Create the /etc directory.
     char etc_path[512];
     snprintf(etc_path, sizeof(etc_path), "%s/etc", test_rootfs);
-    mkdir_p(etc_path);
+    common.mkdir_p(etc_path);
 
     return 0;
 }
@@ -34,7 +34,7 @@ static int teardown(void **state)
     (void)state;
 
     // Remove the test directory.
-    rm_rf(test_rootfs);
+    common.rm_rf(test_rootfs);
     return 0;
 }
 

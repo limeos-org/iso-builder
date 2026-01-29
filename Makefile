@@ -1,8 +1,8 @@
 CC = clang
 CFLAGS = -Wall -Wextra -g -MMD -MP
 
-INTERNAL_LIBS = -L/usr/local/lib -l:limeos-common-lib.a
-EXTERNAL_LIBS = -lcurl -ljson-c -lcrypto -ldl
+INTERNAL_LIBS = $(shell pkg-config --libs limeos-common-lib)
+EXTERNAL_LIBS = -lcurl -ljson-c
 LIBS = $(INTERNAL_LIBS) $(EXTERNAL_LIBS)
 
 # ---

@@ -31,7 +31,7 @@ int validate_dependencies(void)
     // Check required files.
     for (int i = 0; i < REQUIRED_FILES_COUNT; i++)
     {
-        if (!file_exists(REQUIRED_FILES[i]))
+        if (!common.file_exists(REQUIRED_FILES[i]))
         {
             missing_files = 1;
         }
@@ -40,7 +40,7 @@ int validate_dependencies(void)
     // Check required commands.
     for (int i = 0; i < REQUIRED_COMMANDS_COUNT; i++)
     {
-        if (!is_command_available(REQUIRED_COMMANDS[i]))
+        if (!common.is_command_available(REQUIRED_COMMANDS[i]))
         {
             missing_commands = 1;
         }

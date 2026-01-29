@@ -39,14 +39,14 @@ int main(int argc, char *argv[])
     {
         for (int i = 0; i < REQUIRED_FILES_COUNT; i++)
         {
-            if (!file_exists(REQUIRED_FILES[i]))
+            if (!common.file_exists(REQUIRED_FILES[i]))
             {
                 LOG_ERROR("Missing required file: %s", REQUIRED_FILES[i]);
             }
         }
         for (int i = 0; i < REQUIRED_COMMANDS_COUNT; i++)
         {
-            if (!is_command_available(REQUIRED_COMMANDS[i]))
+            if (!common.is_command_available(REQUIRED_COMMANDS[i]))
             {
                 LOG_ERROR("Missing required command: %s", REQUIRED_COMMANDS[i]);
             }
@@ -84,21 +84,21 @@ int main(int argc, char *argv[])
 
     // Extract and validate the version.
     version = argv[optind];
-    if (validate_version(version) != 1)
+    if (common.validate_version(version) != 1)
     {
         LOG_ERROR("Invalid version format: %s (expected: X.Y.Z or vX.Y.Z)", version);
         return 1;
     }
 
     // Create a secure temporary build directory.
-    if (create_secure_tmpdir(build_dir, sizeof(build_dir)) != 0)
+    if (common.create_secure_tmpdir(build_dir, sizeof(build_dir)) != 0)
     {
         LOG_ERROR("Failed to create secure build directory");
         return 1;
     }
 
     // Install signal handlers for graceful shutdown.
-    install_signal_handlers(build_dir);
+    common.install_signal_handlers(build_dir);
 
     // Construct derived paths.
     snprintf(components_dir, sizeof(components_dir), "%s/components", build_dir);
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
         exit_code = 1;
         goto cleanup;
     }
-    if (check_interrupted()) return 130;
+    if (common.check_interrupted()) return 130;
 
     // Phase 2: Base - create and strip base rootfs.
     if (run_base_phase(base_rootfs_dir) != 0)
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
         exit_code = 1;
         goto cleanup;
     }
-    if (check_interrupted()) return 130;
+    if (common.check_interrupted()) return 130;
 
     // Phase 3: Target - copy base, install packages, brand, package.
     if (run_target_phase(base_rootfs_dir, target_rootfs_dir, target_tarball_path, version) != 0)
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
         exit_code = 1;
         goto cleanup;
     }
-    if (check_interrupted()) return 130;
+    if (common.check_interrupted()) return 130;
 
     // Phase 4: Live - copy base, install packages, embed target.
     if (run_live_phase(base_rootfs_dir, live_rootfs_dir, target_tarball_path, components_dir, version) != 0)
@@ -139,10 +139,10 @@ int main(int argc, char *argv[])
         exit_code = 1;
         goto cleanup;
     }
-    if (check_interrupted()) return 130;
+    if (common.check_interrupted()) return 130;
 
     // Base rootfs no longer needed after target and live are created.
-    rm_rf(base_rootfs_dir);
+    common.rm_rf(base_rootfs_dir);
 
     // Phase 5: Assembly - configure bootloaders and create ISO.
     if (run_assembly_phase(live_rootfs_dir, version) != 0)
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     }
 
 cleanup:
-    rm_rf(build_dir);
-    clear_cleanup_dir();
+    common.rm_rf(build_dir);
+    common.clear_cleanup_dir();
     return exit_code;
 }

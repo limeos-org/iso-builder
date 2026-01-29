@@ -11,23 +11,23 @@ int cleanup_apt_directories(const char *rootfs_path)
 
     // Remove apt cache.
     snprintf(dir_path, sizeof(dir_path), "%s/var/cache/apt", rootfs_path);
-    if (rm_rf(dir_path) != 0)
+    if (common.rm_rf(dir_path) != 0)
     {
         return -1;
     }
 
     // Recreate apt cache directory (best-effort).
-    mkdir_p(dir_path);
+    common.mkdir_p(dir_path);
 
     // Remove apt lists.
     snprintf(dir_path, sizeof(dir_path), "%s/var/lib/apt/lists", rootfs_path);
-    if (rm_rf(dir_path) != 0)
+    if (common.rm_rf(dir_path) != 0)
     {
         return -2;
     }
 
     // Recreate apt lists directory (best-effort).
-    mkdir_p(dir_path);
+    common.mkdir_p(dir_path);
 
     return 0;
 }
@@ -40,24 +40,24 @@ int copy_kernel_and_initrd(const char *rootfs_path)
 
     // Copy kernel to standard path.
     snprintf(pattern, sizeof(pattern), "%s/boot/vmlinuz-*", rootfs_path);
-    if (find_first_glob(pattern, src, sizeof(src)) != 0)
+    if (common.find_first_glob(pattern, src, sizeof(src)) != 0)
     {
         return -1;
     }
     snprintf(dst, sizeof(dst), "%s/boot/vmlinuz", rootfs_path);
-    if (copy_file(src, dst) != 0)
+    if (common.copy_file(src, dst) != 0)
     {
         return -2;
     }
 
     // Copy initrd to standard path.
     snprintf(pattern, sizeof(pattern), "%s/boot/initrd.img-*", rootfs_path);
-    if (find_first_glob(pattern, src, sizeof(src)) != 0)
+    if (common.find_first_glob(pattern, src, sizeof(src)) != 0)
     {
         return -3;
     }
     snprintf(dst, sizeof(dst), "%s/boot/initrd.img", rootfs_path);
-    if (copy_file(src, dst) != 0)
+    if (common.copy_file(src, dst) != 0)
     {
         return -4;
     }
@@ -73,7 +73,7 @@ int cleanup_versioned_boot_files(const char *rootfs_path)
 
     // Quote the boot path for shell safety.
     char quoted_boot[COMMON_MAX_QUOTED_LENGTH];
-    if (shell_escape_path(boot_path, quoted_boot, sizeof(quoted_boot)) != 0)
+    if (common.shell_escape_path(boot_path, quoted_boot, sizeof(quoted_boot)) != 0)
     {
         return -1;
     }
@@ -94,7 +94,7 @@ int cleanup_versioned_boot_files(const char *rootfs_path)
     );
 
     // Ignore errors since files may not exist.
-    run_command(command);
+    common.run_command(command);
 
     return 0;
 }

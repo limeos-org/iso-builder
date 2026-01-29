@@ -18,7 +18,7 @@ static int write_installer_service(const char *rootfs_path)
 
     // Create the systemd service directory.
     snprintf(path, sizeof(path), "%s/etc/systemd/system", rootfs_path);
-    if (mkdir_p(path) != 0)
+    if (common.mkdir_p(path) != 0)
     {
         return -1;
     }
@@ -51,7 +51,7 @@ static int write_installer_service(const char *rootfs_path)
         "%s/etc/systemd/system/" CONFIG_INSTALLER_SERVICE_NAME ".service",
         rootfs_path
     );
-    if (write_file(path, service_content) != 0)
+    if (common.write_file(path, service_content) != 0)
     {
         return -2;
     }
@@ -75,7 +75,7 @@ static int enable_installer_service(const char *rootfs_path)
         "%s/etc/systemd/system/multi-user.target.wants",
         rootfs_path
     );
-    if (mkdir_p(wants_dir) != 0)
+    if (common.mkdir_p(wants_dir) != 0)
     {
         return -1;
     }
@@ -87,7 +87,7 @@ static int enable_installer_service(const char *rootfs_path)
         "%s/" CONFIG_INSTALLER_SERVICE_NAME ".service",
         wants_dir
     );
-    if (symlink_file("../" CONFIG_INSTALLER_SERVICE_NAME ".service", link_path) != 0)
+    if (common.symlink_file("../" CONFIG_INSTALLER_SERVICE_NAME ".service", link_path) != 0)
     {
         LOG_ERROR("Failed to enable installer service");
         return -2;
@@ -110,7 +110,7 @@ static int set_default_systemd_target(const char *rootfs_path)
         "%s/etc/systemd/system/default.target",
         rootfs_path
     );
-    if (symlink_file("/lib/systemd/system/multi-user.target", link_path) != 0)
+    if (common.symlink_file("/lib/systemd/system/multi-user.target", link_path) != 0)
     {
         LOG_ERROR("Failed to set default target");
         return -1;
@@ -133,7 +133,7 @@ static int disable_tty1_getty(const char *rootfs_path)
         "%s/etc/systemd/system/getty.target.wants/getty@tty1.service",
         rootfs_path
     );
-    if (rm_file(getty_path) != 0)
+    if (common.rm_file(getty_path) != 0)
     {
         LOG_ERROR("Failed to disable getty on tty1");
         return -1;

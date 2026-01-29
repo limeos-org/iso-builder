@@ -125,7 +125,7 @@ static int verify_checksum(
 
     // Compute the actual checksum of the downloaded file.
     char actual_hash[COMMON_SHA256_HEX_LENGTH];
-    if (compute_file_sha256(file_path, actual_hash, sizeof(actual_hash)) != 0)
+    if (common.compute_file_sha256(file_path, actual_hash, sizeof(actual_hash)) != 0)
     {
         LOG_ERROR("Failed to compute checksum for %s", file_path);
         return -1;
@@ -153,20 +153,20 @@ static int copy_local_component(
     snprintf(local_path, sizeof(local_path), CONFIG_LOCAL_BIN_DIR "/%s", component->binary_name);
 
     // Check if the local binary exists.
-    if (!file_exists(local_path))
+    if (!common.file_exists(local_path))
     {
         return -1;
     }
 
     // Create the output directory if it does not exist.
-    mkdir_p(output_directory);
+    common.mkdir_p(output_directory);
 
     // Construct the output path using the repo name.
     char output_path[COMMON_MAX_PATH_LENGTH];
     snprintf(output_path, sizeof(output_path), "%s/%s", output_directory, component->repo_name);
 
     // Copy the local binary to the output directory.
-    if (copy_file(local_path, output_path) != 0)
+    if (common.copy_file(local_path, output_path) != 0)
     {
         return -2;
     }
@@ -226,7 +226,7 @@ static int download_remote(
     LOG_INFO("Fetching %s %s", component->repo_name, resolved_version);
 
     // Create the output directory if it does not exist.
-    mkdir_p(output_directory);
+    common.mkdir_p(output_directory);
 
     // Open the output file for writing.
     FILE *output_file = fopen(output_path, "wb");

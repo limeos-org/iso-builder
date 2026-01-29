@@ -13,7 +13,7 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
     char theme_dir[COMMON_MAX_PATH_LENGTH];
 
     // Verify the logo file exists.
-    if (!file_exists(logo_path))
+    if (!common.file_exists(logo_path))
     {
         return -1;
     }
@@ -26,7 +26,7 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
     );
 
     // Create the Plymouth theme directory.
-    if (mkdir_p(theme_dir) != 0)
+    if (common.mkdir_p(theme_dir) != 0)
     {
         return -2;
     }
@@ -36,7 +36,7 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
     snprintf(splash_dest, sizeof(splash_dest), "%s/splash.png", theme_dir);
 
     // Copy the logo to the theme directory.
-    if (copy_file(logo_path, splash_dest) != 0)
+    if (common.copy_file(logo_path, splash_dest) != 0)
     {
         return -3;
     }
@@ -61,7 +61,7 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
         "ScriptFile=" CONFIG_PLYMOUTH_THEMES_DIR "/" CONFIG_PLYMOUTH_THEME_NAME "/" CONFIG_PLYMOUTH_THEME_NAME ".script\n";
 
     // Write the Plymouth theme file.
-    if (write_file(theme_file_path, theme_cfg) != 0)
+    if (common.write_file(theme_file_path, theme_cfg) != 0)
     {
         return -4;
     }
@@ -92,7 +92,7 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
         "sprite.SetY(Window.GetHeight() / 2 - scaled.GetHeight() / 2);\n";
 
     // Write the Plymouth script file.
-    if (write_file(script_path, script_cfg) != 0)
+    if (common.write_file(script_path, script_cfg) != 0)
     {
         return -5;
     }
@@ -104,13 +104,13 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
         "plymouth-set-default-theme %s",
         CONFIG_PLYMOUTH_THEME_NAME
     );
-    if (run_chroot_indented(rootfs_path, theme_cmd) != 0)
+    if (common.run_chroot_indented(rootfs_path, theme_cmd) != 0)
     {
         LOG_WARNING("Failed to set Plymouth theme (plymouth may not be installed)");
     }
 
     // Regenerate initramfs to embed the Plymouth theme.
-    if (run_chroot_indented(rootfs_path, "update-initramfs -u") != 0)
+    if (common.run_chroot_indented(rootfs_path, "update-initramfs -u") != 0)
     {
         LOG_WARNING("Failed to regenerate initramfs");
     }
@@ -126,10 +126,10 @@ int configure_plymouth(const char *rootfs_path, const char *logo_path)
         "%s/boot/initrd.img-*",
         rootfs_path
     );
-    if (find_first_glob(initrd_pattern, initrd_src, sizeof(initrd_src)) == 0)
+    if (common.find_first_glob(initrd_pattern, initrd_src, sizeof(initrd_src)) == 0)
     {
         snprintf(initrd_dst, sizeof(initrd_dst), "%s/boot/initrd.img", rootfs_path);
-        if (copy_file(initrd_src, initrd_dst) != 0)
+        if (common.copy_file(initrd_src, initrd_dst) != 0)
         {
             LOG_WARNING("Failed to copy updated initrd");
         }
