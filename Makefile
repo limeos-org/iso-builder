@@ -1,3 +1,7 @@
+# ---
+# Common
+# ---
+
 CC = clang
 CFLAGS = -Wall -Wextra -g -MMD -MP
 
